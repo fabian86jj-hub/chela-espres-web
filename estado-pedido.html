@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estado del Pedido</title>
+  <link rel="stylesheet" href="/styles-globales/estadopedido.css">
+  <script src="https://chela-backend.onrender.com/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script>
+    window.jsPDF = window.jspdf?.jsPDF || window.jsPDF;
+  </script>
+</head>
+<body>
+
+  <header class="header">
+    <a href="/menu.html"><img src="/img/interfaz/icons/atras.webp" alt="Atrás" class="back-icon"></a>
+    <h1 class="page-title">Estado del Pedido</h1>
+  </header>
+
+  <div id="vista-pedido">
+    <div class="pedido-info">
+      <h2 class="nro-pedido">Pedido #<span id="numero-pedido">----</span></h2>
+      <p class="fecha-pedido" id="fecha-pedido">-- -- ---- --:-- --</p>
+    </div>
+
+    <div class="timeline" id="contenedor-linea-tiempo">
+      <div class="paso" id="paso-recibido">
+        <div class="paso-circulo" id="icono-recibido">✔</div>
+        <div class="paso-texto">
+          <h3 class="paso-titulo" id="titulo-recibido">Recibido</h3>
+          <p class="paso-desc" id="desc-recibido">Tu pedido ha sido recibido.</p>
+        </div>
+      </div>
+      <div class="paso-linea" id="linea1"></div>
+
+      <div class="paso" id="paso-preparacion">
+        <div class="paso-circulo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="paso-texto">
+          <h3 class="paso-titulo">En preparación</h3>
+          <p class="paso-desc">Estamos preparando tu pedido.</p>
+        </div>
+      </div>
+      <div class="paso-linea" id="linea2"></div>
+
+      <div class="paso" id="paso-camino">
+        <div class="paso-circulo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3" fill="#fff"/>
+          </svg>
+        </div>
+        <div class="paso-texto">
+          <h3 class="paso-titulo">En camino</h3>
+          <p class="paso-desc">Tu pedido va en camino.</p>
+        </div>
+      </div>
+      <div class="paso-linea" id="linea3"></div>
+
+      <div class="paso" id="paso-entregado">
+        <div class="paso-circulo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="paso-texto">
+          <h3 class="paso-titulo">Entregado</h3>
+          <p class="paso-desc">Tu pedido ha sido entregado.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="total-box">
+      <span class="total-label">Total a pagar:</span>
+      <span class="total-val" id="total-pedido">Q0.00</span>
+    </div>
+
+    <button class="btn-descargar" id="btn-descargar">
+      Descargar Recibo
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="vista-vacia" id="vista-vacia">
+    <h2>No hay pedidos actualmente</h2>
+  </div>
+
+<script>
+const API_URL = 'https://chela-backend.onrender.com/api';
+const socket = io('https://chela-backend.onrender.com', { transports: ['websocket', 'polling'] });
+
+let datosPedidoActual = null;
+const sonidoNotificacion = new Audio('/sonnotific.mp3');
+let ultimoEstado = null;
+
+const vistaPedido = document.getElementById("vista-pedido");
+const vistaVacia = document.getElementById("vista-vacia");
+
+const pasos = {
+  recibido: document.getElementById("paso-recibido"),
+  preparacion: document.getElementById("paso-preparacion"),
+  camino: document.getElementById("paso-camino"),
+  entregado: document.getElementById("paso-entregado")
+};
+const lineas = { l1: document.getElementById("linea1"), l2: document.getElementById("linea2"), l3: document.getElementById("linea3") };
+const btnDescargar = document.getElementById("btn-descargar");
+
+btnDescargar.addEventListener("click", () => {
+  if (!datosPedidoActual) return alert("No hay datos del pedido");
+  generarTicketPDF(datosPedidoActual);
+});
+
+// --- FUNCIÓN MAESTRA CORREGIDA PARA EL HORARIO ---
+function obtenerFechaLocal(fechaServer) {
+  if (!fechaServer) return new Date();
+  return new Date(fechaServer); // Esto permite al navegador calcular las horas correctamente
+}
+// -------------------------------------------------
+
+async function consultarPedido() {
+  const idPedidoGuardado = localStorage.getItem("ultimoPedidoId");
+  const numPedidoGuardado = localStorage.getItem("ultimoPedido");
+
+  if (!numPedidoGuardado && !idPedidoGuardado) {
+    mostrarVacio();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/pedidos`);
+    const pedidos = await res.json();
+    
+    // Buscar por ID o por número de pedido
+    let pedido = null;
+    if (idPedidoGuardado) {
+      pedido = pedidos.find(p => String(p.id) === String(idPedidoGuardado));
+    }
+    if (!pedido && numPedidoGuardado) {
+      pedido = pedidos.find(p => String(p.numero) === String(numPedidoGuardado).trim());
+    }
+
+    if (!pedido) {
+      mostrarVacio();
+      return;
+    }
+
+    datosPedidoActual = pedido;
+    actualizarDatosPedido(pedido);
+    actualizarEstados(pedido.estado || "pendiente");
+
+  } catch (err) {
+    console.error("Error al consultar pedido:", err);
+  }
+}
+
+// Escuchar cambios en tiempo real desde el servidor MySQL / Socket.io
+socket.on('pedidoActualizado', () => {
+  consultarPedido();
+});
+
+function mostrarVacio() {
+  vistaPedido.style.display = "none";
+  vistaVacia.style.display = "block";
+  datosPedidoActual = null;
+  ultimoEstado = null;
+}
+
+function actualizarDatosPedido(datos) {
+  vistaPedido.style.display = "block";
+  vistaVacia.style.display = "none";
+
+  document.getElementById("numero-pedido").textContent = datos.numero || "0";
+
+  // USAR FUNCIÓN MAESTRA AQUÍ PARA LA VISTA WEB
+  let fecha = obtenerFechaLocal(datos.fecha);
+  const opciones = { day:'numeric', month:'long', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true };
+  document.getElementById("fecha-pedido").textContent = fecha.toLocaleDateString("es-GT", opciones).replace(",", " -");
+
+  const subtotal = (datos.productos || []).reduce((s, p) => s + (Number(p.precio) || 0) * (Number(p.cantidad) || 1), 0);
+  let envioMonto = 15;
+  if(subtotal >= 100) envioMonto = 0;
+  else if(subtotal >= 50) envioMonto = 10;
+  document.getElementById("total-pedido").textContent = `Q${(subtotal + envioMonto).toFixed(2)}`;
+}
+
+function actualizarEstados(estado) {
+  const e = (estado || "pendiente").trim().toLowerCase().replace(/\s+/g, "");
+
+  if (ultimoEstado !== null && ultimoEstado !== e) {
+    sonidoNotificacion.play().catch(err => console.log("El navegador bloqueó la reproducción automática:", err));
+  }
+  ultimoEstado = e;
+
+  const iconoRecibido = document.getElementById("icono-recibido");
+  const tituloRecibido = document.getElementById("titulo-recibido");
+  const descRecibido = document.getElementById("desc-recibido");
+
+  iconoRecibido.textContent = "✔";
+  tituloRecibido.textContent = "Recibido";
+  descRecibido.textContent = "Tu pedido ha sido recibido.";
+
+  Object.values(pasos).forEach(p => {
+    p.classList.remove("completado", "activo", "cancelado");
+    p.style.display = "flex";
+  });
+  Object.values(lineas).forEach(l => {
+    l.classList.remove("completada");
+    l.style.height = "0";
+  });
+
+  switch (e) {
+    case "pendiente": 
+    case "recibido":
+      pasos.recibido.classList.add("completado"); 
+      break;
+
+    case "enpreparacion": 
+    case "preparacion":
+      pasos.recibido.classList.add("completado");
+      lineas.l1.style.height = "32px"; lineas.l1.classList.add("completada");
+      pasos.preparacion.classList.add("activo"); 
+      break;
+
+    case "encamino":
+      pasos.recibido.classList.add("completado");
+      lineas.l1.style.height = "32px"; lineas.l1.classList.add("completada");
+      pasos.preparacion.classList.add("completado");
+      lineas.l2.style.height = "32px"; lineas.l2.classList.add("completada");
+      pasos.camino.classList.add("activo"); 
+      break;
+
+    case "entregado":
+      pasos.recibido.classList.add("completado");
+      lineas.l1.style.height = "32px"; lineas.l1.classList.add("completada");
+      pasos.preparacion.classList.add("completado");
+      lineas.l2.style.height = "32px"; lineas.l2.classList.add("completada");
+      pasos.camino.classList.add("completado");
+      lineas.l3.style.height = "32px"; lineas.l3.classList.add("completada");
+      pasos.entregado.classList.add("completado"); 
+      break;
+
+    case "cancelado":
+      pasos.recibido.classList.add("cancelado");
+      iconoRecibido.textContent = "✕";
+      tituloRecibido.textContent = "Cancelado";
+      descRecibido.textContent = "Tu pedido ha sido cancelado.";
+      pasos.preparacion.style.display = "none";
+      pasos.camino.style.display = "none";
+      pasos.entregado.style.display = "none"; 
+      break;
+  }
+}
+
+function generarTicketPDF(pedido) {
+  try {
+    if (!window.jsPDF) throw new Error("Librería no cargada");
+    const docPdf = new jsPDF({ orientation:"portrait", unit:"mm", format:[80, 300] });
+
+    const idPedido = String(pedido.numero || "0");
+    const nombreCliente = pedido.nombre || "Sin nombre";
+    const nitCliente = (pedido.nitcf && String(pedido.nitcf).trim()) ? pedido.nitcf : "C/F";
+    const telCliente = pedido.telefono || "Sin teléfono";
+    const dirCliente = pedido.direccion || "Sin dirección";
+    
+    // MÉTODO DE PAGO
+    const metodoPago = (pedido.metodo_pago || pedido.metodoPago || "Efectivo al recibir").toUpperCase();
+    
+    // USAR FUNCIÓN MAESTRA AQUÍ PARA EL TICKET PDF
+    let fechaObj = obtenerFechaLocal(pedido.fecha);
+    const fechaPedido = fechaObj.toLocaleDateString("es-GT") + ' ' + fechaObj.toLocaleTimeString("es-GT",{hour:'2-digit',minute:'2-digit'});
+
+    const subtotal = (pedido.productos || []).reduce((s, p) => s + (Number(p.precio) || 0) * (Number(p.cantidad) || 1), 0);
+    let envioMonto = 15;
+    if(subtotal >= 100) envioMonto = 0;
+    else if(subtotal >= 50) envioMonto = 10;
+    const total = subtotal + envioMonto;
+
+    docPdf.setFont("courier", "bold"); docPdf.setFontSize(14);
+    docPdf.text("CHELA EXPRESS", 40, 12, { align:"center" });
+    docPdf.setFont("courier", "normal"); docPdf.setFontSize(8);
+    docPdf.text("SERVICIO DE ENTREGA", 40, 17, { align:"center" });
+    docPdf.text("------------------------------------------", 40, 21, { align:"center" });
+    docPdf.setFont("courier", "bold"); docPdf.setFontSize(11);
+    docPdf.text(`PEDIDO: #${idPedido}`, 40, 27, { align:"center" });
+    docPdf.setFont("courier", "normal"); docPdf.setFontSize(9);
+    docPdf.text(`Fecha: ${fechaPedido}`, 10, 33);
+    docPdf.setFont("courier", "bold"); docPdf.text("DATOS DEL CLIENTE:", 10, 40);
+    docPdf.setFont("courier", "normal");
+    
+    const formatearLargo = (etq, txt, y) => {
+      const lineas = docPdf.splitTextToSize(`${etq}${txt||""}`, 60);
+      lineas.forEach((l, i) => docPdf.text(l, 10, y + i*4));
+      return y + lineas.length*4;
+    };
+    
+    let y = 45;
+    y = formatearLargo("Nombre: ", nombreCliente, y);
+    y = formatearLargo("NIT/CF: ", nitCliente, y);
+    y = formatearLargo("Tel.: ", telCliente, y);
+    y = formatearLargo("Dir.: ", dirCliente, y);
+    docPdf.text(`PAGO: ${metodoPago}`, 10, y); y += 5;
+    docPdf.text("------------------------------------------", 40, y, { align:"center" }); y += 6;
+    docPdf.setFont("courier", "bold"); docPdf.text("CANT  DESCRIPCIÓN", 10, y); docPdf.text("TOTAL", 70, y, { align:"right" }); y += 4;
+    docPdf.setFont("courier", "normal"); docPdf.text("------------------------------------------", 40, y, { align:"center" }); y += 5;
+    
+    (pedido.productos || []).forEach(prod => {
+      const cant = String(prod.cantidad || 1);
+      const nom = prod.nombre || "Producto";
+      const tot = `Q${((Number(prod.precio)||0)*(Number(prod.cantidad)||1)).toFixed(2)}`;
+      docPdf.text(cant, 10, y);
+      const ln = docPdf.splitTextToSize(nom, 38);
+      ln.forEach((l,i) => docPdf.text(l, 20, y + i*4));
+      docPdf.text(tot, 70, y, { align:"right" });
+      y += Math.max(4, ln.length*4)+1;
+      if(y > 250) { docPdf.addPage([80,300]); y=15; }
+    });
+    
+    y += 2;
+    docPdf.text("------------------------------------------", 40, y, { align:"center" }); y += 5;
+    docPdf.text("Subtotal:", 15, y); docPdf.text(`Q${subtotal.toFixed(2)}`, 68, y, { align:"right" }); y += 4;
+    docPdf.text("Envío:", 15, y); docPdf.text(envioMonto===0?"Gratis":`Q${envioMonto.toFixed(2)}`, 68, y, { align:"right" }); y += 5;
+    docPdf.setFont("courier", "bold"); 
+    docPdf.text("TOTAL A PAGAR:", 15, y);
+    docPdf.text(`Q${total.toFixed(2)}`, 68, y, { align:"right" });
+    y += 8;
+    docPdf.setFont("courier", "normal"); docPdf.setFontSize(8);
+    docPdf.text("¡Gracias por tu preferencia!", 40, y, { align:"center" }); y += 4;
+    docPdf.text("Chela Express — Tu entrega rápida", 40, y, { align:"center" });
+    docPdf.save(`Pedido_No.:${idPedido}.pdf`);
+  } catch(err) { alert("Error PDF: " + err.message); }
+}
+
+consultarPedido();
+</script>
+</body>
+</html>

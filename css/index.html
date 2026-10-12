@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ingresar — Administración</title>
+  
+  <!-- Manifest y PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ef4444">
+  <link rel="apple-touch-icon" href="ico192.png">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #ffffff;
+      padding: 24px;
+    }
+
+    .contenedor {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* TARJETA DE INSTALACIÓN */
+    .tarjeta-instalar {
+      width: 100%;
+      background-color: #f3f4f6;
+      border-radius: 20px;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+      display: none; /* Se activa automáticamente con JS si la app no está instalada */
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .app-icono {
+      width: 58px;
+      height: 58px;
+      border-radius: 14px;
+      object-fit: cover;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .app-info {
+      flex: 1;
+    }
+
+    .app-titulo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 2px;
+    }
+
+    .app-descripcion {
+      font-size: 14px;
+      color: #64748b;
+      line-height: 1.25;
+    }
+
+    .app-acciones {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-si {
+      background-color: #ef4444;
+      color: #ffffff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .btn-si:hover {
+      background-color: #dc2626;
+    }
+
+    .btn-si:active {
+      transform: scale(0.95);
+    }
+
+    .btn-no {
+      background: none;
+      border: none;
+      color: #1e293b;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 6px;
+    }
+
+    .btn-no:hover {
+      color: #64748b;
+    }
+
+    /* FORMULARIO DE LOGIN */
+    h1 {
+      font-size: 32px;
+      color: #0f172a;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .subtitulo {
+      font-size: 18px;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .input-contenedor {
+      width: 100%;
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .input-contraseña {
+      width: 100%;
+      padding: 16px 48px 16px 20px;
+      font-size: 18px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      background: transparent;
+    }
+
+    .input-contraseña:focus {
+      border-color: #ef4444;
+    }
+
+    .icono-ojo-btn {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+
+    .icono-svg {
+      width: 24px;
+      height: 24px;
+      stroke: #64748b;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .mostrar-contenedor {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+      cursor: pointer;
+    }
+
+    .checkbox-contenedor {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .checkbox-personalizado {
+      width: 22px;
+      height: 22px;
+      opacity: 0;
+      position: absolute;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .checkbox-cuadro {
+      width: 22px;
+      height: 22px;
+      background-color: #ef4444;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .checkbox-cuadro .check-svg {
+      width: 14px;
+      height: 14px;
+      stroke: #ffffff;
+      stroke-width: 3;
+      fill: none;
+    }
+
+    .texto-mostrar {
+      font-size: 17px;
+      color: #334155;
+      user-select: none;
+    }
+
+    .btn-entrar {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(90deg, #ef4444 0%, #f93333 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 20px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-entrar:active {
+      transform: scale(0.98);
+    }
+
+    .flecha-svg {
+      width: 24px;
+      height: 24px;
+      stroke: #ffffff;
+      stroke-width: 2.5;
+      fill: none;
+    }
+
+    @media (min-width: 768px) {
+      h1 { font-size: 36px; }
+      .subtitulo { font-size: 20px; }
+      .input-contraseña { padding: 18px 52px 18px 22px; font-size: 19px; }
+      .btn-entrar { padding: 20px; font-size: 21px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+
+    <!-- Tarjeta de instalación PWA -->
+    <div class="tarjeta-instalar" id="tarjeta-instalar">
+      <img src="ico512.png" alt="Icono App" class="app-icono">
+      <div class="app-info">
+        <div class="app-titulo">¿Quieres instalar la app?</div>
+        <div class="app-descripcion">Pedidos rápidos y sin usar navegador.</div>
+      </div>
+      <div class="app-acciones">
+        <button type="button" class="btn-si" id="btn-instalar-si">Sí</button>
+        <button type="button" class="btn-no" id="btn-instalar-no">No</button>
+      </div>
+    </div>
+
+    <h1>Ingrese su contraseña</h1>
+    <p class="subtitulo">Por seguridad, ingrese su contraseña para continuar.</p>
+
+    <div class="input-contenedor">
+      <input type="text" id="contraseña" class="input-contraseña" placeholder="Contraseña">
+      <button type="button" class="icono-ojo-btn" id="ojo-btn" onclick="toggleContraseña()">
+        <svg class="icono-svg" id="ojo-icono" viewBox="0 0 24 24">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </button>
+    </div>
+
+    <label class="mostrar-contenedor" for="mostrar-check">
+      <div class="checkbox-contenedor">
+        <input type="checkbox" id="mostrar-check" class="checkbox-personalizado" checked>
+        <div class="checkbox-cuadro">
+          <svg class="check-svg" viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+      </div>
+      <span class="texto-mostrar">Mostrar contraseña</span>
+    </label>
+
+    <button type="button" class="btn-entrar" onclick="verificarContraseña()">
+      <svg class="flecha-svg" viewBox="0 0 24 24">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+        <polyline points="10 17 15 12 10 7"></polyline>
+        <line x1="15" y1="12" x2="3" y2="12"></line>
+      </svg>
+      Entrar
+    </button>
+  </div>
+
+  <script>
+    const CONTRASEÑA_CORRECTA = 'Admin123';
+    const inputContraseña = document.getElementById('contraseña');
+    const ojoIcono = document.getElementById('ojo-icono');
+    const checkbox = document.getElementById('mostrar-check');
+
+    function toggleContraseña() {
+      if (inputContraseña.type === 'text') {
+        inputContraseña.type = 'password';
+        checkbox.checked = false;
+        ojoIcono.innerHTML = `
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.25A9.07 9.07 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+        `;
+      } else {
+        inputContraseña.type = 'text';
+        checkbox.checked = true;
+        ojoIcono.innerHTML = `
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        `;
+      }
+    }
+
+    checkbox.addEventListener('change', toggleContraseña);
+
+    function verificarContraseña() {
+      if (inputContraseña.value === CONTRASEÑA_CORRECTA) {
+        window.location.href = 'admin-pedidos.html';
+      } else {
+        alert('Contraseña incorrecta. Inténtalo de nuevo.');
+        inputContraseña.value = '';
+        inputContraseña.focus();
+      }
+    }
+
+    inputContraseña.addEventListener('keydown', e => {
+      if (e.key === 'Enter') verificarContraseña();
+    });
+
+    // --- INSTALACIÓN AUTOMÁTICA PWA ---
+    let deferredPrompt = null;
+    const tarjetaInstalar = document.getElementById('tarjeta-instalar');
+    const btnSi = document.getElementById('btn-instalar-si');
+    const btnNo = document.getElementById('btn-instalar-no');
+
+    // Comprobar si la app ya fue instalada o si se corre en ventana independiente (standalone)
+    const estaInstalada = localStorage.getItem('pwa_instalada') === 'true';
+    const esModoApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    if (estaInstalada || esModoApp) {
+      tarjetaInstalar.style.display = 'none';
+    }
+
+    // Registrar el Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registrado:', reg.scope))
+          .catch(err => console.error('Error Service Worker:', err));
+      });
+    }
+
+    // Capturar el evento de instalación nativo
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Solo mostrar la tarjeta si no ha sido instalada previamente
+      if (!estaInstalada && !esModoApp) {
+        tarjetaInstalar.style.display = 'flex';
+      }
+    });
+
+    // Acción del botón "Sí"
+    btnSi.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          localStorage.setItem('pwa_instalada', 'true');
+          tarjetaInstalar.style.display = 'none';
+        }
+        deferredPrompt = null;
+      } else {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS) {
+          alert('En iOS/Safari: Toca el botón "Compartir" y selecciona "Agregar a la pantalla de inicio".');
+        } else {
+          alert('Abre el menú de tu navegador (⋮) y selecciona "Instalar aplicación".');
+        }
+      }
+    });
+
+    // Botón "No" oculta la tarjeta
+    btnNo.addEventListener('click', () => {
+      tarjetaInstalar.style.display = 'none';
+    });
+
+    // Confirmación final cuando la app queda instalada
+    window.addEventListener('appinstalled', () => {
+      localStorage.setItem('pwa_instalada', 'true');
+      tarjetaInstalar.style.display = 'none';
+      console.log('App instalada con éxito');
+    });
+  </script>
+</body>
+</html>

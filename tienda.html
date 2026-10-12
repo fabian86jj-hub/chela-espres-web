@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compras — Chela Express</title>
+  <link rel="stylesheet" href="/styles-globales/tienda.css">
+  <script src="https://chela-backend.onrender.com/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <header class="header">
+    <a href="menu.html"><img src="/img/interfaz/icons/atras.webp" alt="Atrás" class="header-icon"></a>
+    <h1 class="page-title" id="titulo-tienda">Tienda</h1>
+    <div class="cart-icon-wrap">
+      <a href="carrito.html" class="cart-link">
+        <img src="/img/interfaz/icons/iconcar.webp" alt="Carrito" class="header-icon">
+        <span class="cart-badge" id="cartCounter">0</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="search-box">
+    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2">
+      <circle cx="11" cy="11" r="8"></circle>
+      <path d="m21 21-4.35-4.35"></path>
+    </svg>
+    <input type="text" id="buscador" placeholder="Buscar producto...">
+  </div>
+
+  <div class="filters" id="contenedor-filtros">
+    <button class="filter-btn active" data-cat="todas">Todas</button>
+  </div>
+
+  <div id="productsList">
+    <div class="cargando">Cargando productos...</div>
+  </div>
+
+<script>
+const API_URL = 'https://chela-backend.onrender.com/api';
+const socket = io('https://chela-backend.onrender.com', { transports: ['websocket', 'polling'] });
+const audioCart = new Audio('sonagg.mp3');
+const parametros = new URLSearchParams(window.location.search);
+
+const PARAM_TIENDA_RAW = parametros.get("tienda") || "cervezas";
+const NOMBRE_TIENDA = PARAM_TIENDA_RAW.trim().toLowerCase();
+
+let todosLosProductos = [];
+let productosFiltrados = [];
+let subcategoriaActiva = "todas";
+
+window.addEventListener("DOMContentLoaded", iniciar);
+
+async function iniciar() { 
+  document.getElementById("titulo-tienda").textContent = 
+    NOMBRE_TIENDA.charAt(0).toUpperCase() + NOMBRE_TIENDA.slice(1);
+  
+  configurarEventos(); 
+  await cargarDatosTienda();
+  updateCartCounter(true);
+}
+
+// Cargar subcategorías y productos desde MySQL
+async function cargarDatosTienda() {
+  const containerProds = document.getElementById("productsList");
+  containerProds.innerHTML = `<div class="cargando">Cargando productos...</div>`;
+
+  try {
+    const res = await fetch(`${API_URL}/admin/productos`);
+    const data = await res.json();
+
+    // Filtrar productos que correspondan a esta tienda y estén visibles y con stock
+    todosLosProductos = data.filter(p => 
+      String(p.tienda || '').trim().toLowerCase() === NOMBRE_TIENDA &&
+      p.mostrar !== 0 && p.mostrar !== false &&
+      (p.stock === undefined || Number(p.stock) > 0)
+    );
+
+    // Extraer subcategorías únicas para los botones de filtro
+    const subcats = [...new Set(todosLosProductos.map(p => (p.categoria || '').trim().toLowerCase()).filter(Boolean))];
+    const contenedorFiltros = document.getElementById("contenedor-filtros");
+    contenedorFiltros.innerHTML = `<button class="filter-btn active" data-cat="todas">Todas</button>`;
+    
+    subcats.forEach(sc => {
+      const nomFormateado = sc.charAt(0).toUpperCase() + sc.slice(1);
+      contenedorFiltros.innerHTML += `<button class="filter-btn" data-cat="${sc}">${nomFormateado}</button>`;
+    });
+
+    aplicarFiltrosYBusqueda();
+  } catch (err) {
+    console.error("Error al cargar datos de la tienda:", err);
+    containerProds.innerHTML = `<div class="cargando" style="color:#f66;">Error al obtener los productos</div>`;
+  }
+}
+
+socket.on('productoActualizado', () => {
+  cargarDatosTienda();
+});
+
+function aplicarFiltrosYBusqueda() {
+  const textoBuscador = document.getElementById("buscador").value.trim().toLowerCase();
+
+  productosFiltrados = todosLosProductos.filter(p => {
+    const cumpleSubcat = subcategoriaActiva === "todas" || String(p.categoria || '').trim().toLowerCase() === subcategoriaActiva;
+    const cumpleTexto = textoBuscador === "" || 
+      (p.nombre || "").toLowerCase().includes(textoBuscador) || 
+      (p.descripcion || "").toLowerCase().includes(textoBuscador);
+    return cumpleSubcat && cumpleTexto;
+  });
+
+  renderizarProductos();
+}
+
+function configurarEventos() {
+  document.getElementById('contenedor-filtros').addEventListener('click', e => {
+    if (e.target.classList.contains('filter-btn')) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      
+      subcategoriaActiva = e.target.dataset.cat;
+      document.getElementById("buscador").value = "";
+      aplicarFiltrosYBusqueda();
+    }
+  });
+
+  document.getElementById("buscador").addEventListener("input", () => {
+    aplicarFiltrosYBusqueda();
+  });
+}
+
+function renderizarProductos() {
+  const container = document.getElementById("productsList");
+  container.innerHTML = "";
+
+  if (!productosFiltrados.length) {
+    container.innerHTML = `<div class="cargando">No hay productos disponibles en esta sección</div>`;
+    return;
+  }
+
+  productosFiltrados.forEach(p => {
+    const urlImg = p.ruta_imagen || p.imagen || '';
+    const div = document.createElement("div");
+    div.className = "product";
+    div.innerHTML = `
+      <img src="${urlImg}" class="prod-img" alt="${p.nombre}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 70 90%22%3E%3Crect fill=%22%23222%22 width=%2270%22 height=%2290%22/%3E%3Ctext fill=%22%23666%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2210%22%3EImagen%3C/text%3E%3C/svg%3E';">
+      <div class="prod-info">
+        <h3 class="prod-name">${p.nombre}</h3>
+        <p class="prod-desc">${p.descripcion || ''}</p>
+        <p class="prod-price">Q${(Number(p.precio) || 0).toFixed(2)}</p>
+      </div>
+      <div class="prod-actions">
+        <button class="btn-buy" onclick="addToCart('${p.id}','${(p.nombre || '').replace(/'/g, "\\'")}','${(p.descripcion || '').replace(/'/g, "\\'")}',${Number(p.precio) || 0},${Number(p.costo) || 0},${Number(p.ganancia) || 0},this)">Comprar</button>
+        <div class="qty-control">
+          <button class="qty-btn minus" onclick="changeQty(this,-1)">−</button>
+          <span class="qty-val">1</span>
+          <button class="qty-btn plus" onclick="changeQty(this,1)">+</button>
+        </div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function changeQty(btn, delta) {
+  const span = btn.parentElement.querySelector('.qty-val');
+  let val = parseInt(span.textContent) + delta;
+  if (val < 1) val = 1;
+  span.textContent = val;
+}
+
+function addToCart(id, nombre, descripcion, precio, costo, ganancia, btn) {
+  const cant = parseInt(btn.nextElementSibling.querySelector('.qty-val').textContent);
+  const img = btn.closest('.product').querySelector('.prod-img').src;
+  
+  let cart = JSON.parse(localStorage.getItem('carrito') || '[]');
+  const idx = cart.findIndex(x => x.id === id);
+  
+  if (idx >= 0) {
+    cart[idx].cantidad += cant;
+  } else {
+    cart.push({ id, nombre, descripcion, precio, costo, ganancia, cantidad: cant, imagen: img });
+  }
+
+  localStorage.setItem('carrito', JSON.stringify(cart));
+  updateCartCounter();
+}
+
+function updateCartCounter(isInitialLoad = false) {
+  const cartBadge = document.getElementById('cartCounter');
+  const conteoAnterior = parseInt(cartBadge.textContent) || 0;
+  const cart = JSON.parse(localStorage.getItem('carrito') || '[]');
+  const conteoNuevo = cart.reduce((s, p) => s + p.cantidad, 0);
+
+  cartBadge.textContent = conteoNuevo;
+
+  if (!isInitialLoad && conteoNuevo > conteoAnterior) {
+    audioCart.currentTime = 0;
+    audioCart.play().catch(e => console.log("Sonido bloqueado:", e));
+  }
+}
+
+window.addEventListener('storage', () => updateCartCounter(false));
+</script>
+</body>
+</html>

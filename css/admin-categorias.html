@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Categorías — Administración Chela Express</title>
+    <link rel="stylesheet" href="Stylepedidos.css">
+    <script src="https://chela-backend.onrender.com/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h1>CHELA express</h1>
+    </div>
+    <nav class="sidebar-menu">
+        <a href="/css/admin-tienda.html" class="menu-item" id="menu-tienda">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Estado Tienda
+        </a>
+
+        <a href="/css/admin-pedidos.html" class="menu-item" id="menu-pedidos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+            Pedidos <span class="badge" id="contador-pedidos">0</span>
+        </a>
+
+        <a href="/css/admin-ventas.html" class="menu-item" id="menu-ventas">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            Ventas
+        </a>
+
+        <a href="/css/admin-productos.html" class="menu-item" id="menu-productos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
+            </svg>
+            Productos <span class="badge" id="contador-productos">0</span>
+        </a>
+
+        <a href="/css/admin-noticias.html" class="menu-item" id="menu-noticias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"></path>
+            </svg>
+            Noticias <span class="badge" id="contador-noticias">0</span>
+        </a>
+
+        <a href="/css/admin-categorias.html" class="menu-item activo" id="menu-categorias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+            </svg>
+            Categorías <span class="badge" id="contador-categorias">0</span>
+        </a>
+    </nav>
+</aside>
+
+<main class="main-content">
+    <h2 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        Administrar Categorías / Menú
+    </h2>
+
+    <div class="panel" style="margin-bottom: 20px;">
+        <h3 style="margin-bottom: 14px; font-size: 16px;" id="titulo-form">Agregar Nueva Categoría</h3>
+        <form id="form-categoria" style="display:grid; gap:10px;">
+            <input type="hidden" id="cat-id">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                    <label class="etiqueta">Nombre interno (igual al campo "tienda" de productos)</label>
+                    <input type="text" id="cat-nombre-interno" class="buscador" placeholder="ej: cervezas" required>
+                </div>
+                <div>
+                    <label class="etiqueta">Orden de aparición</label>
+                    <input type="number" id="cat-orden" class="buscador" value="1" min="1">
+                </div>
+            </div>
+
+            <label class="etiqueta">Enlace directo de la imagen</label>
+            <input type="text" id="cat-imagen" class="buscador" placeholder="Pega el enlace de la imagen igual que en productos" required>
+            <img id="cat-vista-previa" class="vista-previa-img" alt="Vista previa" style="max-height:80px; object-fit:contain; display:none; margin-top:6px;">
+
+            <label style="display:flex; align-items:center; gap:8px; margin:6px 0;">
+                <input type="checkbox" id="cat-mostrar" checked>
+                <span>✅ Mostrar tarjeta en el menú principal</span>
+            </label>
+
+            <div style="display:flex; gap:10px; margin-top:8px;">
+                <button type="submit" class="btn verde" id="btn-guardar">GUARDAR CATEGORÍA</button>
+                <button type="button" class="btn azul" id="btn-cancelar" style="display:none;">CANCELAR EDICIÓN</button>
+            </div>
+        </form>
+    </div>
+
+    <input type="text" class="buscador" id="buscador-categorias" placeholder="Buscar categorías...">
+
+    <div class="panel">
+        <h3 style="margin-bottom:14px; font-size:16px;">Lista de Categorías</h3>
+        <table class="tabla-pedidos">
+            <thead>
+                <tr>
+                    <th>Imagen</th>
+                    <th>Nombre Interno</th>
+                    <th>Orden</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="lista-categorias">
+                <tr><td colspan="5" class="cargando">Cargando categorías...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<script>
+    const API_URL = 'https://chela-backend.onrender.com/api';
+const socket = io('https://chela-backend.onrender.com', { transports: ['websocket', 'polling'] });
+
+    let categorias = [];
+    let textoFiltro = "";
+
+    const form = document.getElementById("form-categoria");
+    const lista = document.getElementById("lista-categorias");
+    const buscador = document.getElementById("buscador-categorias");
+    const btnCancelar = document.getElementById("btn-cancelar");
+    const tituloForm = document.getElementById("titulo-form");
+    const inputImagen = document.getElementById("cat-imagen");
+    const vistaPrevia = document.getElementById("cat-vista-previa");
+
+    inputImagen.addEventListener("input", e => {
+        const val = e.target.value.trim();
+        if(val && val.startsWith("http")) {
+            vistaPrevia.src = val;
+            vistaPrevia.style.display = "block";
+        } else {
+            vistaPrevia.style.display = "none";
+        }
+    });
+
+    async function cargarCategorias() {
+        try {
+            const res = await fetch(`${API_URL}/admin/categorias`);
+            categorias = await res.json();
+            
+            const badge = document.getElementById("contador-categorias");
+            if(badge) badge.textContent = categorias.length;
+
+            renderLista();
+        } catch (err) {
+            console.error("Error al cargar categorías:", err);
+            lista.innerHTML = `<tr><td colspan="5" class="cargando" style="color:#f66;">Error al conectar con el servidor</td></tr>`;
+        }
+    }
+
+    socket.on('categoriaActualizada', () => { cargarCategorias(); });
+
+    function renderLista() {
+        lista.innerHTML = "";
+        const filtro = textoFiltro.toLowerCase();
+
+        const visibles = filtro 
+            ? categorias.filter(c => (c.nombreInterno||"").toLowerCase().includes(filtro))
+            : categorias;
+
+        if(visibles.length === 0) {
+            lista.innerHTML = `<tr><td colspan="5" class="cargando">Sin categorías</td></tr>`;
+            return;
+        }
+
+        visibles.forEach(c => {
+            const mostrar = c.mostrar !== 0 && c.mostrar !== false;
+            const urlImg = c.imagen || '';
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>
+                  <img src="${urlImg}" style="width:45px; height:45px; object-fit:contain; border-radius:4px; background:#111;" alt="" onerror="this.style.display='none'">
+                </td>
+                <td><strong>${c.nombreInterno||"Sin nombre"}</strong></td>
+                <td>${c.orden||1}</td>
+                <td>
+                    <button class="btn-tabla ${mostrar ? 'btn-ver' : 'btn-eliminar'}" 
+                        onclick="toggleMostrarCat('${c.id}', ${!mostrar})"
+                        style="padding:2px 6px; font-size:11px; border-radius:4px; border:none; cursor:pointer;">
+                        ${mostrar ? '✅ Visible' : '❌ Oculta'}
+                    </button>
+                </td>
+                <td style="white-space:nowrap;">
+                    <button class="btn-tabla btn-ver" title="Editar" onclick="editarCategoria('${c.id}')">Editar</button>
+                    <button class="btn-tabla btn-eliminar" title="Eliminar" onclick="borrarCategoria('${c.id}','${c.nombreInterno||""}')">Borrar</button>
+                </td>
+            `;
+            lista.appendChild(tr);
+        });
+    }
+
+    window.toggleMostrarCat = async function(id, nuevoValor) {
+        const c = categorias.find(x => String(x.id) === String(id));
+        if(!c) return;
+        c.mostrar = nuevoValor;
+
+        try {
+            await fetch(`${API_URL}/admin/categorias/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(c)
+            });
+            mostrarToast(nuevoValor ? "✅ Categoría visible" : "🙈 Categoría oculta");
+            cargarCategorias();
+        } catch(err) { alert("Error al actualizar visibilidad"); }
+    };
+
+    window.editarCategoria = function(id) {
+        const c = categorias.find(x => String(x.id) === String(id));
+        if(!c) return;
+
+        document.getElementById("cat-id").value = id;
+        document.getElementById("cat-nombre-interno").value = c.nombreInterno || "";
+        document.getElementById("cat-orden").value = c.orden || 1;
+        document.getElementById("cat-imagen").value = c.imagen || "";
+        document.getElementById("cat-mostrar").checked = c.mostrar !== 0 && c.mostrar !== false;
+
+        if(c.imagen && c.imagen.startsWith("http")) {
+            vistaPrevia.src = c.imagen;
+            vistaPrevia.style.display = "block";
+        } else {
+            vistaPrevia.style.display = "none";
+        }
+
+        tituloForm.textContent = "Editar Categoría";
+        btnCancelar.style.display = "inline-flex";
+        window.scrollTo({top:0,behavior:'smooth'});
+    };
+
+    btnCancelar.addEventListener("click", () => {
+        form.reset();
+        tituloForm.textContent = "Agregar Nueva Categoría";
+        btnCancelar.style.display = "none";
+        vistaPrevia.style.display = "none";
+        document.getElementById("cat-id").value = "";
+    });
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const idExistente = document.getElementById("cat-id").value.trim();
+        const id = idExistente || `cat-${Date.now()}`;
+        const datos = {
+            id: id,
+            nombreInterno: document.getElementById("cat-nombre-interno").value.trim().toLowerCase(),
+            orden: parseInt(document.getElementById("cat-orden").value) || 99,
+            imagen: document.getElementById("cat-imagen").value.trim(),
+            mostrar: document.getElementById("cat-mostrar").checked
+        };
+
+        if(!datos.nombreInterno) return alert("⚠️ Escribe el nombre interno");
+        if(!datos.imagen) return alert("⚠️ Pega el enlace de la imagen");
+
+        try {
+            const url = idExistente ? `${API_URL}/admin/categorias/${idExistente}` : `${API_URL}/admin/categorias`;
+            const metodo = idExistente ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+            const resp = await res.json();
+
+            if(resp.success) {
+                mostrarToast(idExistente ? "✅ Categoría actualizada" : "✅ Categoría agregada");
+                form.reset();
+                tituloForm.textContent = "Agregar Nueva Categoría";
+                btnCancelar.style.display = "none";
+                vistaPrevia.style.display = "none";
+                document.getElementById("cat-id").value = "";
+                cargarCategorias();
+            } else {
+                alert("❌ Error: " + resp.error);
+            }
+        } catch(err) {
+            alert("❌ Error: " + err.message);
+        }
+    });
+
+    window.borrarCategoria = async function(id, nombre) {
+        if(!confirm(`⚠️ ¿Eliminar "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
+        try {
+            await fetch(`${API_URL}/admin/categorias/${id}`, { method: 'DELETE' });
+            mostrarToast("🗑️ Categoría eliminada");
+            cargarCategorias();
+        } catch(err) {
+            alert("❌ Error: " + err.message);
+        }
+    };
+
+    buscador.addEventListener("input", e => {
+        textoFiltro = e.target.value;
+        renderLista();
+    });
+
+    function mostrarToast(texto) {
+        const toast = document.createElement("div");
+        toast.className = "toast-notificacion";
+        toast.textContent = texto;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add("mostrar"), 10);
+        setTimeout(() => {
+            toast.classList.remove("mostrar");
+            setTimeout(() => toast.remove(), 300);
+        }, 2500);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        cargarCategorias();
+    });
+</script>
+</body>
+</html>

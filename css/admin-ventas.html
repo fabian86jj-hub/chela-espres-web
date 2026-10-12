@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reporte de Ventas — Administración Chela Express</title>
+    <link rel="stylesheet" href="Stylepedidos.css">
+    <script src="https://chela-backend.onrender.com/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h1>CHELA express</h1>
+    </div>
+    <nav class="sidebar-menu">
+        <a href="/css/" class="menu-item" id="menu-tienda">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Estado Tienda
+        </a>
+
+        <a href="/css/admin-pedidos.html" class="menu-item" id="menu-pedidos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+            Pedidos <span class="badge" id="contador-pedidos">0</span>
+        </a>
+
+        <a href="/css/admin-ventas.html" class="menu-item activo" id="menu-ventas">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            Ventas
+        </a>
+
+        <a href="/css/admin-productos.html" class="menu-item" id="menu-productos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
+            </svg>
+            Productos <span class="badge" id="contador-productos">0</span>
+        </a>
+
+        <a href="/css/admin-noticias.html" class="menu-item" id="menu-noticias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"></path>
+            </svg>
+            Noticias <span class="badge" id="contador-noticias">0</span>
+        </a>
+
+        <a href="/css/admin-categorias.html" class="menu-item" id="menu-categorias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+            </svg>
+            Categorías <span class="badge" id="contador-categorias">0</span>
+        </a>
+    </nav>
+</aside>
+
+<main class="main-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+            Reporte de Ventas Autorizadas
+        </h2>
+        <button type="button" class="btn btn-eliminar" id="btn-borrar-todo" style="padding: 8px 16px; font-size: 13px; font-weight: bold; cursor: pointer;">
+            🗑️ Borrar Todas las Ventas
+        </button>
+    </div>
+
+    <div id="contenedor-filtros-tiempo" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+        <button type="button" class="btn verde btn-filtro-tiempo" data-periodo="hoy" style="padding: 6px 14px; font-size: 13px;">Hoy</button>
+        <button type="button" class="btn azul btn-filtro-tiempo" data-periodo="semana" style="padding: 6px 14px; font-size: 13px; opacity: 0.7;">Últimos 7 Días</button>
+        <button type="button" class="btn azul btn-filtro-tiempo" data-periodo="quincena" style="padding: 6px 14px; font-size: 13px; opacity: 0.7;">Quincena (15 días)</button>
+        <button type="button" class="btn azul btn-filtro-tiempo" data-periodo="mes" style="padding: 6px 14px; font-size: 13px; opacity: 0.7;">Este Mes</button>
+        <button type="button" class="btn azul btn-filtro-tiempo" data-periodo="todo" style="padding: 6px 14px; font-size: 13px; opacity: 0.7;">Histórico Total</button>
+        <button type="button" class="btn azul btn-filtro-tiempo" data-periodo="top" style="padding: 6px 14px; font-size: 13px; opacity: 0.7; font-weight: bold;">🔥 Más Vendidos</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px;">
+        <div class="panel" style="text-align: center; border-left: 4px solid #3182ce;">
+            <small style="color: #aaa; text-transform: uppercase;">Inversión Total</small>
+            <h3 id="resumen-inversion" style="font-size: 24px; color: #424242; margin-top: 4px;">Q0.00</h3>
+        </div>
+        <div class="panel" style="text-align: center; border-left: 4px solid #38a169;">
+            <small style="color: #aaa; text-transform: uppercase;">Ganancia Neta Total</small>
+            <h3 id="resumen-ganancia" style="font-size: 24px; color: #03910f; margin-top: 4px;">Q0.00</h3>
+        </div>
+        <div class="panel" style="text-align: center; border-left: 4px solid #e53e3e;">
+            <small style="color: #aaa; text-transform: uppercase;">Ventas Totales</small>
+            <h3 id="resumen-ventas" style="font-size: 24px; color: #3a04d1; margin-top: 4px;">Q0.00</h3>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3 id="titulo-tabla-ventas" style="margin-bottom:14px; font-size:16px;">Detalle de Ventas Autorizadas</h3>
+        <table class="tabla-pedidos">
+            <thead id="cabecera-tabla-ventas">
+                <tr>
+                    <th>Fecha</th>
+                    <th># Pedido</th>
+                    <th>Producto</th>
+                    <th>Cant.</th>
+                    <th>Inversión</th>
+                    <th>Ganancia</th>
+                    <th>Total</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="lista-ventas-productos">
+                <tr><td colspan="8" class="cargando">Cargando ventas...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<script>
+    const API_URL = 'https://chela-backend.onrender.com/api';
+const socket = io('https://chela-backend.onrender.com', { transports: ['websocket', 'polling'] });
+
+    let todasLasVentasDocs = [];
+    let periodoActivo = "hoy";
+
+    const contenedorFiltros = document.getElementById("contenedor-filtros-tiempo");
+    const listaTabla = document.getElementById("lista-ventas-productos");
+    const cabeceraTabla = document.getElementById("cabecera-tabla-ventas");
+    const tituloTabla = document.getElementById("titulo-tabla-ventas");
+    const btnBorrarTodo = document.getElementById("btn-borrar-todo");
+
+    function configurarFiltrosTiempo() {
+        const botones = contenedorFiltros.querySelectorAll(".btn-filtro-tiempo");
+        botones.forEach(btn => {
+            btn.addEventListener("click", () => {
+                periodoActivo = btn.dataset.periodo;
+                botones.forEach(b => {
+                    const esActivo = b.dataset.periodo === periodoActivo;
+                    b.className = `btn ${esActivo ? 'verde' : 'azul'} btn-filtro-tiempo`;
+                    b.style.opacity = esActivo ? "1" : "0.7";
+                });
+                renderizarVentas();
+            });
+        });
+
+        if (btnBorrarTodo) {
+            btnBorrarTodo.addEventListener("click", borrarTodasLasVentas);
+        }
+    }
+
+    async function cargarVentas() {
+        try {
+            const res = await fetch(`${API_URL}/admin/ventas`);
+            todasLasVentasDocs = await res.json();
+            renderizarVentas();
+        } catch (err) {
+            console.error("Error al obtener ventas:", err);
+            listaTabla.innerHTML = `<tr><td colspan="8" class="cargando" style="color:#f66;">Error descargando datos</td></tr>`;
+        }
+    }
+
+    socket.on('ventaActualizada', () => {
+        cargarVentas();
+    });
+
+    function filtrarPorPeriodo(timestamp) {
+        const ahora = new Date();
+        if (periodoActivo === "hoy") {
+            const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).getTime();
+            return timestamp >= inicioHoy;
+        }
+        if (periodoActivo === "semana") {
+            return timestamp >= (ahora.getTime() - (7 * 24 * 60 * 60 * 1000));
+        }
+        if (periodoActivo === "quincena") {
+            return timestamp >= (ahora.getTime() - (15 * 24 * 60 * 60 * 1000));
+        }
+        if (periodoActivo === "mes") {
+            const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).getTime();
+            return timestamp >= inicioMes;
+        }
+        return true; 
+    }
+
+    function obtenerListaVentasDesglosada() {
+        const resultado = [];
+        todasLasVentasDocs.forEach(doc => {
+            if (filtrarPorPeriodo(doc.timestamp)) {
+                if (Array.isArray(doc.items)) {
+                    doc.items.forEach((it, idx) => {
+                        resultado.push({
+                            docId: doc.id,
+                            subIndex: idx,
+                            numeroPedido: doc.numeroPedido,
+                            timestamp: doc.timestamp,
+                            nombreProducto: it.nombreProducto || "Producto",
+                            cantidad: Number(it.cantidad) || 0,
+                            costo: Number(it.costo) || 0,
+                            ganancia: Number(it.ganancia) || 0,
+                            precio: Number(it.precio) || 0
+                        });
+                    });
+                }
+            }
+        });
+        return resultado;
+    }
+
+    function renderizarVentas() {
+        listaTabla.innerHTML = "";
+        const ventasAplanadas = obtenerListaVentasDesglosada();
+
+        if (periodoActivo === "top") {
+            renderizarTopVendidos(ventasAplanadas);
+            return;
+        }
+
+        tituloTabla.textContent = "Detalle de Ventas Autorizadas";
+        cabeceraTabla.innerHTML = `
+            <tr>
+                <th>Fecha</th>
+                <th># Pedido</th>
+                <th>Producto</th>
+                <th>Cant.</th>
+                <th>Inversión</th>
+                <th>Ganancia</th>
+                <th>Total</th>
+                <th>Acciones</th>
+            </tr>
+        `;
+
+        let sumaInversionTotal = 0;
+        let sumaGananciaTotal = 0;
+        let sumaVentasTotal = 0;
+
+        if (ventasAplanadas.length === 0) {
+            listaTabla.innerHTML = `<tr><td colspan="8" class="cargando">Sin ventas en este período</td></tr>`;
+            document.getElementById("resumen-inversion").textContent = "Q0.00";
+            document.getElementById("resumen-ganancia").textContent = "Q0.00";
+            document.getElementById("resumen-ventas").textContent = "Q0.00";
+            return;
+        }
+
+        ventasAplanadas.forEach(v => {
+            const cant = v.cantidad;
+            const invTotal = v.costo * cant;
+            const ganTotal = v.ganancia * cant;
+            const venTotal = v.precio * cant;
+
+            sumaInversionTotal += invTotal;
+            sumaGananciaTotal += ganTotal;
+            sumaVentasTotal += venTotal;
+
+            const fechaStr = new Date(v.timestamp).toLocaleDateString("es-GT", { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+            const invTotalFmt = invTotal.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const ganTotalFmt = ganTotal.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const venTotalFmt = venTotal.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td style="font-size:12px; color:#aaa;">${fechaStr}</td>
+                <td style="color:#d97706; font-weight:bold;">#${v.numeroPedido||"-"}</td>
+                <td><strong>${v.nombreProducto}</strong></td>
+                <td style="font-weight:bold;">${cant} ud.</td>
+                <td style="color:#aaa;">Q${invTotalFmt}</td>
+                <td style="color:#38a169; font-weight:bold;">Q${ganTotalFmt}</td>
+                <td style="font-weight:bold;">Q${venTotalFmt}</td>
+                <td style="white-space:nowrap;">
+                    <button class="btn-tabla btn-eliminar" onclick="eliminarVenta('${v.docId}')">Borrar</button>
+                </td>
+            `;
+            listaTabla.appendChild(tr);
+        });
+
+        document.getElementById("resumen-inversion").textContent = `Q${sumaInversionTotal.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById("resumen-ganancia").textContent = `Q${sumaGananciaTotal.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById("resumen-ventas").textContent = `Q${sumaVentasTotal.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function renderizarTopVendidos(ventasAplanadas) {
+        tituloTabla.textContent = "Ranking: Productos Más Vendidos a Menos Vendidos";
+        cabeceraTabla.innerHTML = `
+            <tr>
+                <th>Posición</th>
+                <th>Producto</th>
+                <th>Cantidad Vendida</th>
+                <th>Margen Invertido</th>
+                <th>Margen Ganado</th>
+            </tr>
+        `;
+
+        const mapaProductos = {};
+        let sumaInversionTotal = 0;
+        let sumaGananciaTotal = 0;
+        let sumaVentasTotal = 0;
+
+        ventasAplanadas.forEach(v => {
+            const nombre = v.nombreProducto;
+            const cant = v.cantidad;
+            const invTotal = v.costo * cant;
+            const ganTotal = v.ganancia * cant;
+            const venTotal = v.precio * cant;
+
+            sumaInversionTotal += invTotal;
+            sumaGananciaTotal += ganTotal;
+            sumaVentasTotal += venTotal;
+
+            if (!mapaProductos[nombre]) {
+                mapaProductos[nombre] = {
+                    nombreProducto: nombre,
+                    cantidadTotal: 0,
+                    inversionTotal: 0,
+                    gananciaTotal: 0
+                };
+            }
+
+            mapaProductos[nombre].cantidadTotal += cant;
+            mapaProductos[nombre].inversionTotal += invTotal;
+            mapaProductos[nombre].gananciaTotal += ganTotal;
+        });
+
+        const listaTop = Object.values(mapaProductos);
+
+        if (listaTop.length === 0) {
+            listaTabla.innerHTML = `<tr><td colspan="5" class="cargando">Sin datos de ventas registradas</td></tr>`;
+            document.getElementById("resumen-inversion").textContent = "Q0.00";
+            document.getElementById("resumen-ganancia").textContent = "Q0.00";
+            document.getElementById("resumen-ventas").textContent = "Q0.00";
+            return;
+        }
+
+        listaTop.sort((a, b) => b.cantidadTotal - a.cantidadTotal);
+
+        listaTop.forEach((prod, index) => {
+            const invProdFmt = prod.inversionTotal.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const ganProdFmt = prod.gananciaTotal.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td style="font-weight:bold; color:#d97706;">#${index + 1}</td>
+                <td><strong>${prod.nombreProducto}</strong></td>
+                <td style="font-weight:bold;">${prod.cantidadTotal} ud.</td>
+                <td style="color:#aaa;">Q${invProdFmt}</td>
+                <td style="color:#38a169; font-weight:bold;">Q${ganProdFmt}</td>
+            `;
+            listaTabla.appendChild(tr);
+        });
+
+        document.getElementById("resumen-inversion").textContent = `Q${sumaInversionTotal.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById("resumen-ganancia").textContent = `Q${sumaGananciaTotal.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById("resumen-ventas").textContent = `Q${sumaVentasTotal.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    async function borrarTodasLasVentas() {
+        const confirmar = confirm("⚠️ ¿ESTÁS SEGURO?\nEsta acción eliminará de forma permanente TODAS las ventas registradas del historial.");
+        if (!confirmar) return;
+
+        const confirmacionDoble = prompt("Escribe 'BORRAR' para confirmar la eliminación total:");
+        if (confirmacionDoble !== "BORRAR") {
+            alert("Operación cancelada.");
+            return;
+        }
+
+        try {
+            await fetch(`${API_URL}/admin/ventas`, { method: 'DELETE' });
+            alert("✅ Todas las ventas han sido eliminadas correctamente.");
+            cargarVentas();
+        } catch (err) {
+            alert("❌ Error al borrar el historial de ventas: " + err.message);
+        }
+    }
+
+    window.eliminarVenta = async function(idDoc) {
+        if (!confirm("⚠️ ¿Eliminar este registro de venta?")) return;
+        try {
+            await fetch(`${API_URL}/admin/ventas/${idDoc}`, { method: 'DELETE' });
+            cargarVentas();
+        } catch(err) {
+            alert("❌ Error al borrar: " + err.message);
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        configurarFiltrosTiempo();
+        cargarVentas();
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Chela Express">
+  <title>CHELA EXPRESS</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="ico192.png">
+  <link rel="stylesheet" href="/styles-globales/menu.css">
+  <script src="https://chela-backend.onrender.com/socket.io/socket.io.js"></script>
+  <style>
+    /* Pantalla de bloqueo estricta en tiempo real (igual que finalizar compra) */
+    #bloqueo-pantalla {
+      display: none; 
+      position: fixed; 
+      inset: 0; 
+      background-color: rgba(0,0,0,0.95);
+      z-index: 99999; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center;
+      text-align: center; 
+      padding: 24px;
+    }
+    #bloqueo-pantalla h1 { 
+      color: #ff4d4d; 
+      font-size: 28px; 
+      margin-bottom: 10px; 
+    }
+    #bloqueo-pantalla p { 
+      color: #fff; 
+      font-size: 16px; 
+      margin-bottom: 20px; 
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE BLOQUEO EN TIEMPO REAL -->
+  <div id="bloqueo-pantalla">
+    <h1 id="bloqueo-titulo">¡Tienda Cerrada!</h1>
+    <p id="bloqueo-mensaje">Lo sentimos, acabamos de cerrar o estamos en mantenimiento. No podemos procesar tu pedido en este momento.</p>
+  </div>
+
+  <header class="header">
+    <a href="noticias.html" class="icon-link bell-icon-wrap">
+      <img src="/img/interfaz/icons/iconcamapan.webp" alt="Noticias" class="icon-img">
+      <span class="bell-badge" id="bellBadge">!</span>
+    </a>
+    <img src="/img/interfaz/icons/iconochela.webp" alt="Chela Express" class="logo">
+    <div class="cart-icon-wrap">
+      <a href="carrito.html" class="cart-link">
+        <img src="/img/interfaz/icons/iconcar.webp" alt="Carrito" class="icon-img">
+        <span class="cart-badge" id="cartCounter">0</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="search-box">
+    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2">
+      <circle cx="11" cy="11" r="8"></circle>
+      <path d="m21 21-4.35-4.35"></path>
+    </svg>
+    <input type="text" id="searchInput" placeholder="¿Qué deseas hoy?">
+  </div>
+
+  <p class="service-text">Servicio disponible dentro de Zacapa</p>
+  <p class="hours-text">
+    <svg class="clock-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 16 14"></polyline>
+    </svg>
+    Horarios 4:30pm - 10:30pm
+  </p>
+
+  <img src="/img/interfaz/icons/bannerchelaexpres.webp" alt="ENVÍO EXPRESS ¡En minutos!" class="banner-img" id="bannerImg">
+
+  <div id="productsSearchContainer" style="display: none;">
+    <div class="search-results-divider">Productos encontrados</div>
+    <div id="productsSearchList"></div>
+  </div>
+
+  <div class="grid-categories" id="categoryGrid">
+    <div class="cargando" style="grid-column:1/-1;text-align:center;padding:40px;color:#888;">Cargando categorías...</div>
+  </div>
+
+  <div class="install-card" id="installCard" style="display: none;">
+    <img src="/img/interfaz/icons/logochelaexpress.webp" alt="Chela Express" class="install-icon">
+    <div class="install-texts">
+      <p class="install-question">¿Quieres instalar la app?</p>
+      <p class="install-desc">Pedidos rápidos y sin usar navegador.</p>
+      <div class="ios-instructions-box">
+        <strong>En dispositivos IOS desde tu navegador Safari, instalas la App Web así:</strong>
+        <ol>
+          <li>Toca los tres puntos: "⋯" para desplegar menú del navegador.</li>
+          <li>Busca la opción de: "Compartir".</li>
+          <li>Clic en: "Ver más".</li>
+          <li>Busca la opción de: "Agregar a Inicio" y da clic en "Agregar".</li>
+        </ol>
+      </div>
+    </div>
+    <button class="btn-si" id="btnInstallYes">Sí</button>
+    <button class="btn-no" id="btnInstallNo">No</button>
+  </div>
+
+  <div class="social-row" id="socialRow">
+    <a href="https://www.instagram.com/chelaexpresszacapa?stkn=aTN1MTl3YnM4Nndi" class="social-link"><img src="/img/interfaz/icons/instagram.webp" alt="Instagram"></a>
+    <a href="https://www.facebook.com/share/1C9SxSxQaEa6/" class="social-link"><img src="/img/interfaz/icons/facebook.webp" alt="Facebook"></a>
+    <a href="https://wa.link/intglz" class="social-link"><img src="/img/interfaz/icons/whatsapp.webp" alt="WhatsApp"></a>
+    <a href="tiktok.com/@chela.express.zac" class="social-link"><img src="/img/interfaz/icons/tiktok.webp" alt="TikTok"></a>
+  </div>
+
+  <div id="pantallaCarga" style="display:none; position:fixed; inset:0; background-color:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:24px;">
+    <div style="width:50px; height:50px; border:4px solid #333; border-top-color:red; border-radius:50%; animation:girar 1s linear infinite;"></div>
+    <p style="color:#fff; font-size:16px; text-align:center; max-width:300px;">Espera mientras se instala la app...<br><strong>No cierres esta ventana.</strong></p>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="menu.html" class="nav-item">
+      <img src="/img/interfaz/icons/inicio.webp" alt="Inicio">
+      <span>Inició</span>
+    </a>
+    <a href="horarios.html" class="nav-item">
+      <img src="/img/interfaz/icons/horas.webp" alt="Horarios">
+      <span>Horarios</span>
+    </a>
+    <a href="zonas.html" class="nav-item">
+      <img src="/img/interfaz/icons/zona.webp" alt="Zonas">
+      <span>Zonas</span>
+    </a>
+    <a href="estado-pedido.html" class="nav-item">
+      <img src="/img/interfaz/icons/pedido.webp" alt="Mi Pedido">
+      <span>Mi Pedido</span>
+    </a>
+    <a href="ayuda.html" class="nav-item">
+      <img src="/img/interfaz/icons/dudas.webp" alt="Ayuda">
+      <span>Ayuda</span>
+    </a>
+  </nav>
+
+  <script>
+    const API_URL = 'https://chela-backend.onrender.com/api';
+const socket = io('https://chela-backend.onrender.com', { transports: ['websocket', 'polling'] });
+    const audioCart = new Audio('sonagg.mp3');
+
+    let categorias = [];
+    let cacheProductosBusqueda = null;
+
+    // --- SISTEMA DE BLOQUEO DE TIENDA EN TIEMPO REAL ---
+    async function verificarEstadoTienda() {
+      try {
+        const res = await fetch(`${API_URL}/estado-tienda`);
+        const data = await res.json();
+        aplicarBloqueo(data.estado);
+      } catch (err) {
+        console.error("Error al obtener estado de tienda:", err);
+      }
+    }
+
+    socket.on('estadoTiendaCambiado', (nuevoEstado) => {
+      aplicarBloqueo(nuevoEstado);
+    });
+
+    function aplicarBloqueo(estado) {
+      const pantalla = document.getElementById('bloqueo-pantalla');
+      
+      if (estado === 'cerrado') {
+        document.getElementById('bloqueo-titulo').innerHTML = '¡Ya cerramos!';
+        document.getElementById('bloqueo-mensaje').innerHTML = 'Abriremos pronto. <br>--------------------------------------------- <br> HORARIOS  <br> --------------------------------------------- <br> Lunes a viernes: 4:30 pm - 10:30 PM <br> Sábado y Domingo: 8:00 am - 11:00 PM <br><br> Gracias por tu preferencia.';
+        pantalla.style.display = 'flex';
+      } else if (estado === 'mantenimiento') {
+        document.getElementById('bloqueo-titulo').innerHTML = 'Mantenimiento :)';
+        document.getElementById('bloqueo-mensaje').innerHTML = 'Estamos dando mantenimiento a nuestro servidor. <br><br> Volvemos en unos minutos.';
+        pantalla.style.display = 'flex';
+      } else {
+        pantalla.style.display = 'none';
+      }
+    }
+
+    // Cargar noticias / badge de notificaciones
+    async function cargarNoticias() {
+      const badge = document.getElementById("bellBadge");
+      try {
+        const res = await fetch(`${API_URL}/admin/noticias`);
+        const noticias = await res.json();
+        const hayVisibles = noticias.some(n => n.mostrar === 1 || n.mostrar === true);
+        badge.classList.toggle("mostrar", hayVisibles);
+      } catch (err) {
+        console.error("Error al cargar noticias:", err);
+        badge.classList.remove("mostrar");
+      }
+    }
+
+    socket.on('noticiaActualizada', () => {
+      cargarNoticias();
+    });
+
+    function loadImage(imgEl, src) {
+      const respaldo = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 375'%3E%3Crect fill='%231a1a1a' width='300' height='375'/%3E%3Ctext fill='%23666' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='16'%3EImagen%3C/text%3E%3C/svg%3E";
+      if (!src) {
+        imgEl.src = respaldo;
+        return;
+      }
+      imgEl.src = src;
+      imgEl.onerror = () => { imgEl.src = respaldo; };
+    }
+
+    // Cargar categorías desde MySQL
+    async function cargarCategorias() {
+      const grid = document.getElementById("categoryGrid");
+      try {
+        const res = await fetch(`${API_URL}/admin/categorias`);
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+          grid.innerHTML = `<div class="cargando" style="grid-column:1/-1;">No hay categorías activas todavía</div>`;
+          return;
+        }
+
+        categorias = data
+          .filter(cat => cat.mostrar === 1 || cat.mostrar === true)
+          .sort((a, b) => (Number(a.orden) ?? 99) - (Number(b.orden) ?? 99));
+
+        if (categorias.length === 0) {
+          grid.innerHTML = `<div class="cargando" style="grid-column:1/-1;">No hay categorías activas todavía</div>`;
+          return;
+        }
+
+        renderizarCategorias(grid);
+      } catch (err) {
+        console.error("Error al cargar categorías:", err);
+        grid.innerHTML = `<div class="cargando" style="grid-column:1/-1; color:#ff6666;">No se pudieron cargar las categorías</div>`;
+      }
+    }
+
+    socket.on('categoriaActualizada', () => {
+      cargarCategorias();
+    });
+
+    function renderizarCategorias(grid) {
+      grid.innerHTML = "";
+      categorias.forEach(c => {
+        const nombreInt = c.nombre_interno || c.nombreInterno || "";
+        const enlace = `tienda.html?tienda=${encodeURIComponent(nombreInt)}`;
+        const a = document.createElement("a");
+        a.href = enlace;
+        a.className = "cat-item";
+        a.dataset.name = nombreInt;
+        a.innerHTML = `<img src="" alt="${nombreInt}" class="cached-img" loading="lazy">`;
+        grid.appendChild(a);
+        const img = a.querySelector(".cached-img");
+        loadImage(img, c.imagen);
+      });
+    }
+
+    // Obtener productos para búsqueda desde MySQL
+    async function obtenerProductosParaBusqueda() {
+      try {
+        const res = await fetch(`${API_URL}/admin/productos`);
+        const data = await res.json();
+        cacheProductosBusqueda = data.filter(p => p.mostrar !== 0 && p.mostrar !== false);
+        return cacheProductosBusqueda;
+      } catch (err) {
+        console.error("Error al cargar productos para búsqueda:", err);
+        return [];
+      }
+    }
+
+    socket.on('productoActualizado', () => {
+      cacheProductosBusqueda = null;
+    });
+
+    function renderizarProductosBusqueda(filtrados, term) {
+      const container = document.getElementById("productsSearchContainer");
+      const list = document.getElementById("productsSearchList");
+      
+      container.style.display = "block";
+      list.innerHTML = "";
+
+      if (filtrados.length === 0) {
+        list.innerHTML = `<div class="no-results">No se encontraron productos para "${term}"</div>`;
+        return;
+      }
+      
+      filtrados.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "product-item";
+        const imgUrl = p.ruta_imagen || p.imagen || '';
+        div.innerHTML = `
+          <img src="${imgUrl}" alt="${p.nombre}" class="prod-search-img" loading="lazy"
+               onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 70 90%22%3E%3Crect fill=%22%23222%22 width=%2270%22 height=%2290%22/%3E%3Ctext fill=%22%23666%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2210%22%3EImagen%3C/text%3E%3C/svg%3E'">
+          <div class="prod-search-info">
+            <h3 class="prod-search-name">${p.nombre}</h3>
+            <p class="prod-search-desc">${p.descripcion || ''}</p>
+            <p class="prod-search-price">Q${(Number(p.precio) || 0).toFixed(2)}</p>
+          </div>
+          <div class="prod-search-actions">
+            <button class="btn-search-buy" data-id="${p.id}" data-nombre="${(p.nombre || '').replace(/'/g, "\\'")}}" data-desc="${(p.descripcion || '').replace(/'/g, "\\'")}" data-precio="${Number(p.precio) || 0}">Comprar</button>
+            <div class="qty-search-control">
+              <button class="qty-search-btn minus" type="button">−</button>
+              <span class="qty-search-val">1</span>
+              <button class="qty-search-btn plus" type="button">+</button>
+            </div>
+          </div>`;
+        list.appendChild(div);
+      });
+    }
+
+    async function realizarBusqueda(texto) {
+      const term = texto.trim().toLowerCase();
+      
+      const banner = document.getElementById("bannerImg");
+      const gridCat = document.getElementById("categoryGrid");
+      const social = document.getElementById("socialRow");
+      const container = document.getElementById("productsSearchContainer");
+
+      if (term.length < 1) {
+        banner.style.display = "block";
+        gridCat.style.display = "grid";
+        social.style.display = "flex";
+        container.style.display = "none";
+        return;
+      }
+      
+      banner.style.display = "none";
+      gridCat.style.display = "none";
+      social.style.display = "none";
+
+      const productos = await obtenerProductosParaBusqueda();
+      const productosCoincidentes = productos.filter(p => {
+        const nombre = (p.nombre || "").toLowerCase();
+        const desc = (p.descripcion || "").toLowerCase();
+        return nombre.includes(term) || desc.includes(term);
+      });
+      
+      renderizarProductosBusqueda(productosCoincidentes, term);
+    }
+
+    const searchInput = document.getElementById('searchInput');
+    let temporizador;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(temporizador);
+      temporizador = setTimeout(() => {
+        realizarBusqueda(searchInput.value);
+      }, 300);
+    });
+
+    document.addEventListener('click', e => {
+      if (e.target.classList.contains('qty-search-btn')) {
+        const control = e.target.closest('.qty-search-control');
+        const span = control.querySelector('.qty-search-val');
+        let val = parseInt(span.textContent);
+        if (e.target.classList.contains('minus')) {
+          val = val > 1 ? val - 1 : 1;
+        } else {
+          val += 1;
+        }
+        span.textContent = val;
+      }
+      
+      if (e.target.classList.contains('btn-search-buy')) {
+        const btn = e.target;
+        const id = btn.dataset.id;
+        const nombre = btn.dataset.nombre;
+        const descripcion = btn.dataset.desc;
+        const precio = parseFloat(btn.dataset.precio) || 0;
+        const item = btn.closest('.product-item');
+        const cantidad = parseInt(item.querySelector('.qty-search-val').textContent);
+        const img = item.querySelector('.prod-search-img').src;
+        
+        agregarAlCarrito(id, nombre, descripcion, precio, cantidad, img);
+      }
+    });
+
+    function agregarAlCarrito(id, nombre, descripcion, precio, cantidad, imagen) {
+      const carrito = JSON.parse(localStorage.getItem('carrito') || '[]');
+      const indice = carrito.findIndex(x => x.id === id);
+      
+      if (indice >= 0) {
+        carrito[indice].cantidad += cantidad;
+      } else {
+        carrito.push({ id, nombre, descripcion, precio, cantidad, imagen });
+      }
+      
+      localStorage.setItem('carrito', JSON.stringify(carrito));
+      updateCartCounter();
+    }
+
+    const tarjetaInstalar = document.getElementById('installCard');
+    const btnSi = document.getElementById('btnInstallYes');
+    const btnNo = document.getElementById('btnInstallNo');
+    const pantallaCarga = document.getElementById('pantallaCarga');
+    let eventoInstalacion = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      eventoInstalacion = e;
+      tarjetaInstalar.style.display = 'flex';
+    });
+
+    btnSi.addEventListener('click', async () => {
+      if (!eventoInstalacion) return;
+      pantallaCarga.style.display = 'flex';
+      tarjetaInstalar.style.display = 'none';
+      try {
+        await eventoInstalacion.prompt();
+      } catch (err) {
+        console.warn('Instalación:', err);
+      } finally {
+        pantallaCarga.style.display = 'none';
+        eventoInstalacion = null;
+      }
+    });
+
+    btnNo.addEventListener('click', () => {
+      tarjetaInstalar.style.display = 'none';
+    });
+
+    window.addEventListener('appinstalled', () => {
+      tarjetaInstalar.style.display = 'none';
+      eventoInstalacion = null;
+    });
+
+    function updateCartCounter(isInitialLoad = false) {
+      const cartBadge = document.getElementById('cartCounter');
+      const conteoAnterior = parseInt(cartBadge.textContent) || 0;
+      
+      const carrito = JSON.parse(localStorage.getItem('carrito') || '[]');
+      const conteoNuevo = carrito.reduce((s, p) => s + p.cantidad, 0);
+      
+      cartBadge.textContent = conteoNuevo;
+
+      if (!isInitialLoad && conteoNuevo > conteoAnterior) {
+        audioCart.currentTime = 0;
+        audioCart.play().catch(err => console.log("El navegador bloqueó la autoreproducción:", err));
+      }
+    }
+    
+    updateCartCounter(true);
+    window.addEventListener('storage', () => updateCartCounter(false));
+
+    document.addEventListener("DOMContentLoaded", () => {
+      verificarEstadoTienda();
+      cargarCategorias();
+      cargarNoticias();
+    });
+  </script>
+</body>
+</html>

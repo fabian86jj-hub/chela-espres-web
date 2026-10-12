@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Noticias</title>
+  <link rel="stylesheet" href="/styles-globales/noticias.css">
+  <script src="https://chela-backend.onrender.com/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+  <header class="header">
+    <a href="/menu.html"><img src="/img/interfaz/icons/atras.webp" alt="Atrás" class="back-icon"></a>
+    <h1 class="header-title">Noticias</h1>
+  </header>
+
+  <p class="subtitulo">Mantente al día con nuestras novedades</p>
+
+  <div id="newsContainer">
+    <div class="empty-state">Cargando novedades...</div>
+  </div>
+
+  <script>
+    const API_URL = 'https://chela-backend.onrender.com/api';
+const socket = io('https://chela-backend.onrender.com', { transports: ['websocket', 'polling'] });
+
+    function parseLinks(texto) {
+      if (!texto) return "";
+      const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+      return texto.replace(urlRegex, (url) => {
+        const href = url.startsWith("http") ? url : `https://${url}`;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+      });
+    }
+
+    function getTimeAgo(fechaObj) {
+      if (!fechaObj || isNaN(fechaObj)) return "Reciente";
+      const ahora = new Date();
+      const diffMs = ahora - fechaObj;
+      const horas = Math.floor(diffMs / (1000 * 60 * 60));
+      const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (horas < 1) return "Hace unos minutos";
+      if (horas < 24) return `Hace ${horas} hora${horas > 1 ? 's' : ''}`;
+      return `Hace ${dias} día${dias > 1 ? 's' : ''}`;
+    }
+
+    async function cargarNoticiasPublicas() {
+      const contenedor = document.getElementById("newsContainer");
+      contenedor.innerHTML = `<div class="empty-state">Cargando novedades...</div>`;
+
+      try {
+        const res = await fetch(`${API_URL}/admin/noticias`);
+        const noticias = await res.json();
+
+        if (!noticias || noticias.length === 0) {
+          contenedor.innerHTML = `<div class="empty-state">No hay novedades por ahora.</div>`;
+          return;
+        }
+
+        const lista = noticias
+          .filter(n => n.mostrar === 1 || n.mostrar === true)
+          .sort((a, b) => new Date(b.fechaCreacion || b.fecha || 0) - new Date(a.fechaCreacion || a.fecha || 0))
+          .slice(0, 20);
+
+        if (lista.length === 0) {
+          contenedor.innerHTML = `<div class="empty-state">No hay novedades por ahora.</div>`;
+          return;
+        }
+
+        contenedor.innerHTML = "";
+        lista.forEach(n => {
+          const rawFecha = n.fechaCreacion || n.fecha || n.creado_en;
+          const fecha = rawFecha ? new Date(rawFecha) : new Date();
+          const tiempo = getTimeAgo(fecha);
+          const descripcionConLinks = parseLinks(n.contenido || n.descripcion || "");
+          
+          // Lectura directa de la categoría asignada
+          const categoriaTexto = n.categoria && n.categoria.trim() !== "" ? n.categoria : "Aviso";
+
+          const tarjeta = document.createElement("div");
+          tarjeta.className = "news-card";
+          tarjeta.innerHTML = `
+            <div class="news-body">
+              <div class="news-header-row">
+                <span class="cat-tag">${categoriaTexto}</span>
+                <span class="time-text">${tiempo}</span>
+              </div>
+              <h3 class="news-title">${n.titulo || ""}</h3>
+              <p class="news-desc">${descripcionConLinks}</p>
+            </div>
+            <div class="news-img-wrap">
+              <img src="${n.imagen || n.imagenUrl || ''}" alt="Imagen" loading="lazy" onerror="this.style.display='none'">
+            </div>
+          `;
+          contenedor.appendChild(tarjeta);
+        });
+      } catch (err) {
+        console.error("Error al cargar noticias:", err);
+        contenedor.innerHTML = `<div class="empty-state" style="color:#f66;">Sin novedades por el momento</div>`;
+      }
+    }
+
+    socket.on('noticiaActualizada', () => {
+      cargarNoticiasPublicas();
+    });
+
+    document.addEventListener("DOMContentLoaded", cargarNoticiasPublicas);
+  </script>
+</body>
+</html>

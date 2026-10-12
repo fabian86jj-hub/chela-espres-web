@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finalizar Compra</title>
+  <link rel="stylesheet" href="/styles-globales/finalizarcompra.css">
+  <style>
+    /* Estilos para la pantalla de bloqueo */
+    #bloqueo-pantalla {
+      display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.95);
+      z-index: 99999; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 24px;
+    }
+    #bloqueo-pantalla h1 { color: #ff4d4d; font-size: 28px; margin-bottom: 10px; }
+    #bloqueo-pantalla p { color: #fff; font-size: 16px; margin-bottom: 20px; }
+    #bloqueo-pantalla button {
+      background: red; color: white; border: none; padding: 12px 24px;
+      border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE BLOQUEO EN TIEMPO REAL -->
+  <div id="bloqueo-pantalla">
+    <h1 id="bloqueo-titulo">¡Tienda Cerrada!</h1>
+    <p id="bloqueo-mensaje">Lo sentimos, acabamos de cerrar o estamos en mantenimiento. No podemos procesar tu pedido en este momento.</p>
+    <button onclick="window.location.href='menu.html'">Volver al Menú</button>
+  </div>
+
+  <header class="header">
+    <a href="carrito.html"><img src="/img/interfaz/icons/atras.webp" alt="Atrás" class="header-icon"></a>
+    <h1 class="page-title">Finalizar compra</h1>
+  </header>
+
+  <div class="order-section">
+    <h2>Información de tu pedido</h2>
+    <div class="order-id">
+      <svg class="sheet-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" fill="red"/>
+        <path d="M14 2V8H20" stroke="red" stroke-width="2"/>
+        <path d="M8 13H16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8 17H16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8 9H10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Pedido # <span id="orderNumber">----</span>
+    </div>
+  </div>
+
+  <button class="btn-reuse" id="btnReuse" type="button">
+    Usar datos anteriores
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+    </svg>
+  </button>
+
+  <form id="checkoutForm">
+    <label>Nombre completo</label>
+    <input type="text" id="nombre" placeholder="Tu nombre completo" required>
+
+    <label>Teléfono</label>
+    <input type="tel" id="telefono" placeholder="5555-5555" required>
+
+    <label>Dirección exacta</label>
+    <textarea id="direccion" placeholder="Escribe aquí tu dirección exacta..." required></textarea>
+
+    <div class="location-row">
+      <img src="/img/interfaz/icons/gpsrojo.webp" alt="Ubicación" class="location-icon">
+      <div class="location-text">
+        <div class="location-main">Compartir ubicación</div>
+        <div class="location-sub">Para entrega rápida</div>
+      </div>
+      <div class="toggle-switch" id="locToggle"></div>
+    </div>
+    <input type="hidden" id="latitud">
+    <input type="hidden" id="longitud">
+
+    <label>No NIT / CF (opcional)</label>
+    <input type="text" id="nitcf" placeholder="Si tienes NIT o CF escríbelo aquí">
+
+    <label>Notas del pedido (opcional)</label>
+    <textarea id="notas" placeholder="Ej. Sin hielo, timbrar al llegar..." maxlength="500"></textarea>
+
+    <h3 class="payment-title">Método de pago</h3>
+    <div class="payment-option" data-pay="efectivo"><div class="check-box checked"></div><span class="payment-label">Efectivo al Recibir</span></div>
+    <div class="payment-option" data-pay="tarjeta"><div class="check-box"></div><span class="payment-label">Tarjeta al Recibir</span></div>
+    <div class="payment-option" data-pay="transferencia"><div class="check-box"></div><span class="payment-label">Transferencia Bancaria</span></div>
+
+    <button type="submit" class="btn-confirm" id="btnSubmitForm">
+      Confirmar pedido
+      <span class="btn-total" id="totalDisplay">Total a pagar: Q0.00</span>
+    </button>
+  </form>
+
+<script src="https://chela-backend.onrender.com/socket.io/socket.io.js"></script>
+<script>
+const API_URL = 'https://chela-backend.onrender.com/api';
+const socket = io('https://chela-backend.onrender.com', { transports: ['websocket', 'polling'] });
+const STORAGE_KEY_LAST = 'ultimosDatosCliente';
+let selectedPayment = 'efectivo';
+let numeroGenerado = Math.floor(10000 + Math.random() * 90000);
+document.getElementById('orderNumber').textContent = numeroGenerado;
+
+// --- SISTEMA DE BLOQUEO DE TIENDA EN TIEMPO REAL ---
+async function comprobarEstadoTienda() {
+    try {
+        const res = await fetch(`${API_URL}/estado-tienda`);
+        const data = await res.json();
+        aplicarBloqueo(data.estado);
+    } catch (e) { console.error("Error comprobando estado:", e); }
+}
+
+socket.on('estadoTiendaCambiado', (nuevoEstado) => {
+    aplicarBloqueo(nuevoEstado);
+});
+
+function aplicarBloqueo(estado) {
+    const pantalla = document.getElementById('bloqueo-pantalla');
+    const btnConfirmar = document.getElementById('btnSubmitForm');
+    
+    if(estado === 'cerrado') {
+        document.getElementById('bloqueo-titulo').innerHTML = '¡Ya cerramos!';
+        document.getElementById('bloqueo-mensaje').innerHTML = 'Abriremos pronto. <br>--------------------------------------------- <br> HORARIOS  <br> --------------------------------------------- <br> Lunes a viernes: 4:30 pm - 10:30 PM <br> Sábado y Domingo: 8:00 am - 11:00 PM <br><br> Gracias por tu preferencia.';
+        pantalla.style.display = 'flex';
+        btnConfirmar.disabled = true;
+    } else if(estado === 'mantenimiento') {
+        document.getElementById('bloqueo-titulo').innerHTML = 'Mantenimiento :)';
+        document.getElementById('bloqueo-mensaje').innerHTML = 'Estamos dando mantenimiento a nuestro servidor. <br><br> Volvemos en unos minutos.';
+        pantalla.style.display = 'flex';
+        btnConfirmar.disabled = true;
+    } else {
+        pantalla.style.display = 'none';
+        btnConfirmar.disabled = false;
+    }
+}
+comprobarEstadoTienda(); // Comprobar al entrar a la página
+// --------------------------------------------------
+
+function calcularEnvio(subtotal) {
+  if(subtotal >= 100) return 0;
+  if(subtotal >= 50) return 10;
+  return 15;
+}
+
+function obtenerTotalCarrito() {
+  const cart = JSON.parse(localStorage.getItem('carrito') || '[]');
+  let subtotal = cart.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
+  return subtotal + calcularEnvio(subtotal);
+}
+document.getElementById('totalDisplay').textContent = 'Total a pagar: Q' + obtenerTotalCarrito().toFixed(2);
+
+const locToggle = document.getElementById('locToggle');
+locToggle.addEventListener('click', function () {
+  if(locToggle.classList.contains('active')) {
+    locToggle.classList.remove('active');
+    document.getElementById('latitud').value = ''; document.getElementById('longitud').value = '';
+  } else {
+    if(!navigator.geolocation) return alert('Ubicación no soportada.');
+    locToggle.classList.add('active');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        document.getElementById('latitud').value = pos.coords.latitude;
+        document.getElementById('longitud').value = pos.coords.longitude;
+      },
+      () => { alert('Ubicacion no disponible'); locToggle.classList.remove('active'); }
+    );
+  }
+});
+
+function seleccionarMetodo(pago) {
+  selectedPayment = pago;
+  document.querySelectorAll('.payment-option').forEach(opt => {
+    const box = opt.querySelector('.check-box');
+    if (opt.dataset.pay === pago) box.classList.add('checked');
+    else box.classList.remove('checked');
+  });
+}
+
+document.querySelectorAll('.payment-option').forEach(opt => {
+  opt.addEventListener('click', () => seleccionarMetodo(opt.dataset.pay));
+});
+
+function formatearFechaHora(fechaIso) {
+  const f = new Date(fechaIso);
+  const dia = String(f.getDate()).padStart(2, '0');
+  const mes = String(f.getMonth() + 1).padStart(2, '0');
+  const anio = f.getFullYear();
+  let horas = f.getHours();
+  const minutos = String(f.getMinutes()).padStart(2, '0');
+  const ampm = horas >= 12 ? 'p. m.' : 'a. m.';
+  horas = horas % 12 || 12;
+  return `${dia}/${mes}/${anio} - ${horas}:${minutos} ${ampm}`;
+}
+
+function mostrarMensajeExito(orden) {
+  new Audio('/soncomprafin.mp3').play().catch(e=>console.log(e));
+  const fondo = document.createElement('div');
+  fondo.className = 'mensaje-exito-fondo';
+  fondo.innerHTML = `
+    <h1 class="titulo-exito">¡Pedido enviado!</h1>
+    <p class="subtitulo-exito">Tu pedido ha sido enviado correctamente.<br>En breve nos estaremos comunicando contigo.</p>
+    <div class="caja-datos">
+      <div class="fila-dato"><div class="etiqueta-dato">Numero de pedido</div><div class="valor-dato">#${orden.numero}</div></div>
+      <div class="fila-dato"><div class="etiqueta-dato">Fecha y hora</div><div class="valor-dato">${formatearFechaHora(orden.fecha)}</div></div>
+      <div class="fila-dato"><div class="etiqueta-dato">Direccion de entrega</div><div class="valor-dato">${orden.direccion}</div></div>
+    </div>
+    <button class="boton-aceptar" onclick="window.location.replace('estado-pedido.html')">Aceptar</button>
+    <div class="texto-gracias">¡Gracias por tu preferencia!</div>
+    <div class="linea-roja"></div>
+  `;
+  document.body.appendChild(fondo);
+}
+
+document.getElementById('checkoutForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  // Si el botón está bloqueado, no hacer nada
+  if (document.getElementById('btnSubmitForm').disabled) return;
+
+  const cart = JSON.parse(localStorage.getItem('carrito') || '[]');
+  if(cart.length === 0) return alert('Tu carrito esta vacio.');
+
+  const subtotal = cart.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
+  const total = obtenerTotalCarrito();
+  
+  // --- CORRECCIÓN DE LA FECHA Y HORA LOCAL ---
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  
+  // Se crea la fecha en formato local sin convertir a UTC
+  const fechaActual = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`; 
+  // -------------------------------------------
+
+  const idOrdenUnico = `ord-${Date.now()}`;
+
+  const productosGuardar = cart.map(item => ({
+    id: item.id,
+    nombre: item.nombre,
+    cantidad: Number(item.cantidad),
+    costo: Number(item.costo) || 0,
+    precio: Number(item.precio) || 0,
+    ganancia: item.ganancia !== undefined ? Number(item.ganancia) : (Number(item.precio) - Number(item.costo))
+  }));
+
+  const ordenMySQL = {
+    id: idOrdenUnico,
+    numero: numeroGenerado,
+    fecha: fechaActual,
+    nombre: document.getElementById('nombre').value.trim(),
+    telefono: document.getElementById('telefono').value.trim(),
+    direccion: document.getElementById('direccion').value.trim(),
+    latitud: document.getElementById('latitud').value || null,
+    longitud: document.getElementById('longitud').value || null,
+    nitcf: document.getElementById('nitcf').value.trim() || '',
+    notas: document.getElementById('notas').value.trim() || '',
+    metodoPago: selectedPayment,
+    subtotal: subtotal,
+    total: total,
+    productos: productosGuardar
+  };
+
+  try {
+    const btn = document.getElementById('btnSubmitForm');
+    btn.disabled = true;
+    btn.textContent = "Procesando...";
+
+    // Enviar al Backend MySQL
+    const res = await fetch(`${API_URL}/pedidos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ordenMySQL)
+    });
+
+    const data = await res.json();
+    if(data.success) {
+        localStorage.setItem(STORAGE_KEY_LAST, JSON.stringify(ordenMySQL));
+        localStorage.setItem("ultimoPedido", String(ordenMySQL.numero));
+        localStorage.setItem("ultimoPedidoId", data.id);
+        localStorage.setItem('carrito', '[]');
+        mostrarMensajeExito(ordenMySQL);
+    } else {
+        throw new Error(data.error);
+    }
+  } catch(err) {
+    alert('Error enviando el pedido: ' + err.message);
+    document.getElementById('btnSubmitForm').disabled = false;
+    document.getElementById('btnSubmitForm').textContent = "Confirmar pedido";
+  }
+});
+
+document.getElementById('btnReuse').addEventListener('click', function () {
+  const ultimos = localStorage.getItem(STORAGE_KEY_LAST);
+  if(!ultimos) return alert('No hay datos guardados de un pedido anterior.');
+  const d = JSON.parse(ultimos);
+  document.getElementById('nombre').value = d.nombre || '';
+  document.getElementById('telefono').value = d.telefono || '';
+  document.getElementById('direccion').value = d.direccion || '';
+  document.getElementById('nitcf').value = d.nitcf || '';
+  document.getElementById('notas').value = d.notas || '';
+  if(d.latitud && d.longitud) {
+    document.getElementById('latitud').value = d.latitud;
+    document.getElementById('longitud').value = d.longitud;
+    locToggle.classList.add('active');
+  }
+  if(d.metodoPago) seleccionarMetodo(d.metodoPago);
+});
+</script>
+</body>
+</html>

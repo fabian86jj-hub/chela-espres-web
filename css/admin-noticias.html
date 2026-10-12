@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Noticias — Administración Chela Express</title>
+    <link rel="stylesheet" href="Stylepedidos.css">
+    <script src="https://chela-backend.onrender.com/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h1>CHELA express</h1>
+    </div>
+    <nav class="sidebar-menu">
+        <a href="/css/admin-tienda.html" class="menu-item" id="menu-tienda">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Estado Tienda
+        </a>
+        <a href="/css/admin-pedidos.html" class="menu-item" id="menu-pedidos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg> Pedidos <span class="badge" id="contador-pedidos">0</span>
+        </a>
+        <a href="/css/admin-ventas.html" class="menu-item" id="menu-ventas">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg> Ventas
+        </a>
+        <a href="/css/admin-productos.html" class="menu-item" id="menu-productos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path></svg> Productos <span class="badge" id="contador-productos">0</span>
+        </a>
+        <a href="/css/admin-noticias.html" class="menu-item activo" id="menu-noticias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"></path></svg> Noticias <span class="badge" id="contador-noticias">0</span>
+        </a>
+        <a href="/css/admin-categorias.html" class="menu-item" id="menu-categorias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg> Categorías <span class="badge" id="contador-categorias">0</span>
+        </a>
+    </nav>
+</aside>
+
+<main class="main-content">
+    <h2 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        Administrar Noticias y Avisos
+    </h2>
+
+    <div class="panel" style="margin-bottom: 20px;">
+        <h3 style="margin-bottom: 14px; font-size: 16px;" id="titulo-form">Agregar Nueva Noticia</h3>
+        <form id="form-noticia" style="display:grid; gap:10px;">
+            <input type="hidden" id="noticia-id">
+
+            <label class="etiqueta">Categoría (Ej: Empleo, Oferta, Aviso, Promoción...)</label>
+            <input type="text" id="noticia-categoria" class="buscador" placeholder="Ej: Oferta" required>
+
+            <label class="etiqueta">Título del Aviso / Noticia</label>
+            <input type="text" id="noticia-titulo" class="buscador" placeholder="Ej: ¡Horario especial este fin de semana!" required>
+
+            <label class="etiqueta">Contenido del Mensaje</label>
+            <textarea id="noticia-contenido" class="buscador" rows="3" placeholder="Escribe los detalles de la noticia aquí..." style="resize:vertical;" required></textarea>
+
+            <label class="etiqueta">Ruta o Enlace de la Imagen (Opcional)</label>
+            <input type="text" id="noticia-imagen" class="buscador" placeholder="/img/noticias/aviso.webp">
+            <img id="noticia-vista-previa" alt="Vista previa" style="max-height:80px; object-fit:contain; display:none; margin-top:6px;">
+
+            <label style="display:flex; align-items:center; gap:8px; margin:6px 0;">
+                <input type="checkbox" id="noticia-mostrar" checked>
+                <span>Noticia visible para los clientes</span>
+            </label>
+
+            <div style="display:flex; gap:10px; margin-top:8px;">
+                <button type="submit" class="btn verde" id="btn-guardar">GUARDAR NOTICIA</button>
+                <button type="button" class="btn azul" id="btn-cancelar" style="display:none;">CANCELAR EDICION</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h3 style="margin-bottom:14px; font-size:16px;">Lista de Noticias</h3>
+        <table class="tabla-pedidos">
+            <thead>
+                <tr>
+                    <th>Imagen</th>
+                    <th>Categoría</th>
+                    <th>Título</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="lista-noticias">
+                <tr><td colspan="5" class="cargando">Cargando noticias...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<script>
+    const API_URL = 'https://chela-backend.onrender.com/api';
+const socket = io('https://chela-backend.onrender.com', { transports: ['websocket', 'polling'] });
+
+    let noticias = [];
+    const form = document.getElementById("form-noticia");
+    const lista = document.getElementById("lista-noticias");
+    const btnCancelar = document.getElementById("btn-cancelar");
+    const tituloForm = document.getElementById("titulo-form");
+    const inputImagen = document.getElementById("noticia-imagen");
+    const vistaPrevia = document.getElementById("noticia-vista-previa");
+
+    inputImagen.addEventListener("input", e => {
+        const val = e.target.value.trim();
+        if(val) {
+            vistaPrevia.src = val; 
+            vistaPrevia.style.display = "block";
+        } else vistaPrevia.style.display = "none";
+    });
+
+    async function cargarNoticias() {
+        try {
+            const res = await fetch(`${API_URL}/admin/noticias`);
+            noticias = await res.json();
+            
+            const badge = document.getElementById("contador-noticias");
+            if(badge) badge.textContent = noticias.length;
+
+            renderLista();
+        } catch (err) {
+            console.error("Error al cargar noticias:", err);
+            lista.innerHTML = `<tr><td colspan="5" class="cargando" style="color:#f66;">Error al conectar con el servidor</td></tr>`;
+        }
+    }
+
+    socket.on('noticiaActualizada', () => { cargarNoticias(); });
+
+    function renderLista() {
+        lista.innerHTML = "";
+        if (!noticias.length) {
+            lista.innerHTML = `<tr><td colspan="5" class="cargando">No hay noticias registradas</td></tr>`;
+            return;
+        }
+
+        noticias.forEach(n => {
+            const urlImg = n.imagen || n.imagenUrl || '';
+            // Leer categoría cubriendo todas las posibles variantes de nombres en la base de datos
+            const catText = n.categoria || n.tipo || n.tag || "Aviso";
+            
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>
+                  ${urlImg ? `<img src="${urlImg}" style="width:45px; height:45px; object-fit:cover; border-radius:4px;" onerror="this.style.display='none'">` : '<span style="color:#888; font-size:11px;">Sin foto</span>'}
+                </td>
+                <td><strong>${catText}</strong></td>
+                <td><strong>${n.titulo || "Sin título"}</strong><br><small style="color:#555;">${n.contenido || n.descripcion || ""}</small></td>
+                <td>
+                    <button class="btn-tabla ${n.mostrar ? 'btn-ver' : 'btn-eliminar'}" 
+                        onclick="toggleMostrar('${n.id}', ${!n.mostrar})"
+                        style="padding:2px 6px; font-size:11px; border-radius:4px; border:none; cursor:pointer;">
+                        ${n.mostrar ? '✅ Visible' : '❌ Oculto'}
+                    </button>
+                </td>
+                <td style="white-space:nowrap;">
+                    <button class="btn-tabla btn-ver" onclick="editarNoticia('${n.id}')">Editar</button>
+                    <button class="btn-tabla btn-eliminar" onclick="borrarNoticia('${n.id}')">Borrar</button>
+                </td>
+            `;
+            lista.appendChild(tr);
+        });
+    }
+
+    window.toggleMostrar = async function(id, nuevoValor) {
+        const noti = noticias.find(x => x.id === id);
+        if(!noti) return;
+        noti.mostrar = nuevoValor;
+        try {
+            await fetch(`${API_URL}/admin/noticias/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(noti)
+            });
+            cargarNoticias();
+        } catch(err) { alert("Error al actualizar visibilidad"); }
+    };
+
+    window.editarNoticia = function(id) {
+        const n = noticias.find(x => x.id === id);
+        if(!n) return;
+
+        document.getElementById("noticia-id").value = id;
+        document.getElementById("noticia-categoria").value = n.categoria || n.tipo || n.tag || "";
+        document.getElementById("noticia-titulo").value = n.titulo || "";
+        document.getElementById("noticia-contenido").value = n.contenido || n.descripcion || "";
+        document.getElementById("noticia-imagen").value = n.imagen || n.imagenUrl || "";
+        document.getElementById("noticia-mostrar").checked = n.mostrar !== false;
+
+        const imgVal = n.imagen || n.imagenUrl || "";
+        if(imgVal) {
+            vistaPrevia.src = imgVal;
+            vistaPrevia.style.display = "block";
+        } else {
+            vistaPrevia.style.display = "none";
+        }
+
+        tituloForm.textContent = "Editar Noticia";
+        btnCancelar.style.display = "inline-flex";
+        window.scrollTo({top:0,behavior:'smooth'});
+    };
+
+    btnCancelar.addEventListener("click", () => {
+        form.reset();
+        tituloForm.textContent = "Agregar Nueva Noticia";
+        btnCancelar.style.display = "none";
+        vistaPrevia.style.display = "none";
+        document.getElementById("noticia-id").value = "";
+    });
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const idExistente = document.getElementById("noticia-id").value.trim();
+        const id = idExistente || `noticia-${Date.now()}`;
+        const categoriaEscrita = document.getElementById("noticia-categoria").value.trim();
+
+        const datos = {
+            id: id,
+            categoria: categoriaEscrita,
+            tipo: categoriaEscrita, // Enviamos ambos para evitar conflictos con el backend
+            titulo: document.getElementById("noticia-titulo").value.trim(),
+            contenido: document.getElementById("noticia-contenido").value.trim(),
+            descripcion: document.getElementById("noticia-contenido").value.trim(), // Sincronizado
+            imagen: document.getElementById("noticia-imagen").value.trim(),
+            imagenUrl: document.getElementById("noticia-imagen").value.trim(), // Sincronizado
+            mostrar: document.getElementById("noticia-mostrar").checked,
+            fechaCreacion: new Date().toISOString()
+        };
+
+        if(!datos.categoria) return alert("⚠️ Escribe la categoría de la noticia");
+        if(!datos.titulo) return alert("⚠️ Escribe el título de la noticia");
+
+        try {
+            const url = idExistente ? `${API_URL}/admin/noticias/${idExistente}` : `${API_URL}/admin/noticias`;
+            const metodo = idExistente ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+            const resp = await res.json();
+
+            if(resp.success) {
+                form.reset();
+                tituloForm.textContent = "Agregar Nueva Noticia";
+                btnCancelar.style.display = "none";
+                vistaPrevia.style.display = "none";
+                document.getElementById("noticia-id").value = "";
+                alert("✅ Noticia guardada correctamente.");
+                cargarNoticias();
+            } else {
+                alert("❌ Error: " + resp.error);
+            }
+        } catch(err) {
+            alert("❌ Error de red: " + err.message);
+        }
+    });
+
+    window.borrarNoticia = async function(id) {
+        if(!confirm("⚠️ ¿Estás seguro de eliminar esta noticia?")) return;
+        try {
+            await fetch(`${API_URL}/admin/noticias/${id}`, { method: 'DELETE' });
+            cargarNoticias();
+        } catch(err) {
+            alert("❌ Error al borrar: " + err.message);
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        cargarNoticias();
+    });
+</script>
+</body>
+</html>

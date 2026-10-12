@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHELA EXPRESS</title>
+    <style>
+      * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: source sans pro, sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    
+    margin: 0;
+    padding:0 0 20px 0;
+    background: linear-gradient(180deg, 
+        #ff020e 10%, 
+        #851717 40%, 
+        #2b0f0f 59%, 
+        #000000 100%
+    );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.logochelaexpress-img {
+    width: clamp(250px, 28vw, 500px);
+    height: auto;
+    margin-top: -0px;
+    margin-bottom: 45px;
+    
+}
+
+
+
+.text-loquequieras-title1 {
+    font-size: clamp(2rem, 5vw, 2.2rem);
+    color: #ffffff;
+}
+
+.text-loquequieras-title2 {
+    font-size: clamp(2rem, 5vw, 2.2rem);
+    color: #ff3333;
+}
+
+.btn-continuar {
+    background-color: #fe0a0a;
+    color: #ffffff;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border-radius: 50px;
+    cursor: pointer;
+    width: 80%;
+    max-width: 450px;
+    margin-top: 50px;
+    box-sizing: border-box;
+    display: block;
+}
+
+.btn-terminos {
+    background-color: #ffffff00;
+    color: #ffffff;
+    border: 1px solid #ffffff;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border-radius: 50px;
+    cursor: pointer;
+    width: 80%;
+    max-width: 450px;
+    box-sizing: border-box;
+    display: block;
+    margin-top: 10px;
+
+}
+
+
+.text-informativo {
+    text-align: center;
+    font-family: source sans pro, sans-serif;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    line-height: 1.4;
+    color: #ffffff;
+    font-size: 5px;
+}
+    </style>
+</head>
+<body>
+
+<script>
+  // Verificar si ya aceptó antes — si es así, ir directo al menú
+  window.addEventListener('DOMContentLoaded', function() {
+    const yaAcepto = localStorage.getItem('chelaexpress_aceptado_bienvenida');
+    if (yaAcepto === 'true') {
+      window.location.href = 'menu.html';
+    }
+  });
+
+  // Función para guardar en localStorage y continuar
+  function aceptarYContinuar() {
+    localStorage.setItem('chelaexpress_aceptado_bienvenida', 'true');
+    window.location.href = 'menu.html';
+  }
+</script>
+
+    <img src="img/interfaz/icons/logochelaexpress.webp" alt="x" 
+    class="logochelaexpress-img">
+
+<section class="text-loquequieras">
+    <h1 class="text-loquequieras-title1">Lo que quieras,</h1>
+    <h1 class="text-loquequieras-title2">te lo llevamos.</h1>
+</section>
+
+<button class="btn-continuar" onclick="aceptarYContinuar()">Aceptar y Continuar</button>
+<button class="btn-terminos" onclick="location.href='terminos.html'">Ir a ver Terminos</button>
+
+<section class="text-informativo">
+    <h1>Al usar nuestro servicio, <br>aceptas nuestros Términos y Condiciones.</h1>
+</section>
+
+</body>
+</html>

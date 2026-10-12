@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Estado de Tienda — Administración Chela Express</title>
+    <link rel="stylesheet" href="Stylepedidos.css">
+    <link rel="stylesheet" href="Styleestadotienda.css">
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h1>CHELA express</h1>
+    </div>
+    <nav class="sidebar-menu">
+        <a href="/css/admin-tienda.html" class="menu-item activo" id="menu-tienda">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Estado Tienda
+        </a>
+        <a href="/css/admin-pedidos.html" class="menu-item" id="menu-pedidos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+            Pedidos <span class="badge" id="contador-pedidos">0</span>
+        </a>
+        <a href="/css/admin-ventas.html" class="menu-item" id="menu-ventas">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            Ventas
+        </a>
+        <a href="/css/admin-productos.html" class="menu-item" id="menu-productos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
+            </svg>
+            Productos <span class="badge" id="contador-productos">0</span>
+        </a>
+        <a href="/css/admin-noticias.html" class="menu-item" id="menu-noticias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"></path>
+            </svg>
+            Noticias <span class="badge" id="contador-noticias">0</span>
+        </a>
+        <a href="/css/admin-categorias.html" class="menu-item" id="menu-categorias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+            </svg>
+            Categorías <span class="badge" id="contador-categorias">0</span>
+        </a>
+    </nav>
+</aside>
+
+<main class="main-content">
+    <h2 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        Control de Apertura y Estado de la Tienda
+    </h2>
+
+    <div class="panel" style="margin-bottom: 20px;">
+        <h3 style="margin-bottom: 8px; font-size: 16px;">Selecciona el estado operativo actual</h3>
+        <p style="font-size: 13px; color: #aaa;">Al seleccionar una opción, se aplicará inmediatamente en la aplicación del cliente.</p>
+
+        <div class="estado-card-selector">
+            <div class="opcion-estado" id="opt-abierto" onclick="cambiarEstadoTienda('abierto')">
+                <h4>🟢 Abrir Tienda</h4>
+                <p>Operación normal del menú.</p>
+            </div>
+            <div class="opcion-estado" id="opt-cerrado" onclick="cambiarEstadoTienda('cerrado')">
+                <h4>🔴 Cerrar Tienda</h4>
+                <p>Muestra aviso de horarios.</p>
+            </div>
+            <div class="opcion-estado" id="opt-mantenimiento" onclick="cambiarEstadoTienda('mantenimiento')">
+                <h4>🟠 Tienda en Mantenimiento</h4>
+                <p>Muestra aviso de servidor.</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Conexión a Socket.io desde tu nuevo servidor -->
+<script src="https://chela-backend.onrender.com/socket.io/socket.io.js"></script>
+
+<script>
+    const API_URL = 'https://chela-backend.onrender.com/api';
+const socket = io('https://chela-backend.onrender.com', { transports: ['websocket', 'polling'] });
+
+    // Cargar estado inicial desde MySQL
+    async function cargarEstadoActual() {
+        try {
+            const respuesta = await fetch(`${API_URL}/estado-tienda`);
+            const datos = await respuesta.json();
+            actualizarInterfazEstado(datos.estado);
+        } catch (err) {
+            console.error("Error al cargar estado:", err);
+        }
+    }
+
+    // Actualiza los colores de los botones
+    function actualizarInterfazEstado(estado) {
+        document.getElementById("opt-abierto").className = "opcion-estado " + (estado === "abierto" ? "activa-abierto" : "");
+        document.getElementById("opt-cerrado").className = "opcion-estado " + (estado === "cerrado" ? "activa-cerrado" : "");
+        document.getElementById("opt-mantenimiento").className = "opcion-estado " + (estado === "mantenimiento" ? "activa-mantenimiento" : "");
+    }
+
+    // Enviar el nuevo estado a MySQL
+    window.cambiarEstadoTienda = async function(nuevoEstado) {
+        try {
+            const respuesta = await fetch(`${API_URL}/estado-tienda`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado: nuevoEstado })
+            });
+            const datos = await respuesta.json();
+            
+            if(datos.success) {
+                actualizarInterfazEstado(nuevoEstado);
+                mostrarToast("✅ Estado actualizado a: " + nuevoEstado.toUpperCase());
+            }
+        } catch (err) {
+            alert("❌ Error al guardar estado: " + err.message);
+        }
+    };
+
+    // Escuchar cambios en tiempo real (por si tienes otra ventana abierta)
+    socket.on('estadoTiendaCambiado', (nuevoEstado) => {
+        actualizarInterfazEstado(nuevoEstado);
+    });
+
+    function mostrarToast(texto) {
+        const toast = document.createElement("div");
+        toast.className = "toast-notificacion";
+        toast.textContent = texto;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add("mostrar"), 10);
+        setTimeout(() => {
+            toast.classList.remove("mostrar");
+            setTimeout(() => toast.remove(), 300);
+        }, 2500);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        cargarEstadoActual();
+    });
+</script>
+</body>
+</html>

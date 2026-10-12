@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pedidos — Administración Chela Express</title>
+    <link rel="stylesheet" href="Stylepedidos.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://chela-backend.onrender.com/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h1>CHELA express</h1>
+    </div>
+    <nav class="sidebar-menu">
+        <a href="/css/admin-tienda.html" class="menu-item" id="menu-tienda">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Estado Tienda
+        </a>
+        <a href="/css/admin-pedidos.html" class="menu-item activo" id="menu-pedidos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg> Pedidos <span class="badge" id="contador-pedidos">0</span>
+        </a>
+        <a href="/css/admin-ventas.html" class="menu-item" id="menu-ventas">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg> Ventas
+        </a>
+        <a href="/css/admin-productos.html" class="menu-item" id="menu-productos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path></svg> Productos <span class="badge" id="contador-productos">0</span>
+        </a>
+        <a href="/css/admin-noticias.html" class="menu-item" id="menu-noticias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"></path></svg> Noticias <span class="badge" id="contador-noticias">0</span>
+        </a>
+        <a href="/css/admin-categorias.html" class="menu-item" id="menu-categorias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg> Categorías <span class="badge" id="contador-categorias">0</span>
+        </a>
+    </nav>
+</aside>
+
+<main class="main-content">
+    <h2 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        Resumen de Datos en Tiempo Real
+    </h2>
+
+    <div class="resumen-top">
+        <div class="tarjeta-resumen activo" id="filtro-pendientes">
+            <div class="icono-resumen pendiente">
+                <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:24px;height:24px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+            </div>
+            <div class="info-resumen"><p>Pedidos Recientes</p><h3 id="pedidos-nuevos">0</h3></div>
+        </div>
+        
+        <div class="tarjeta-resumen" id="filtro-preparacion">
+            <div class="icono-resumen preparacion">
+                <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:24px;height:24px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+            </div>
+            <div class="info-resumen"><p>En preparación</p><h3 id="pedidos-preparacion">0</h3></div>
+        </div>
+        
+        <div class="tarjeta-resumen" id="filtro-encamino">
+            <div class="icono-resumen encamino">
+                <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:24px;height:24px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 01-1 1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 104 0"></path></svg>
+            </div>
+            <div class="info-resumen"><p>En camino</p><h3 id="pedidos-camino">0</h3></div>
+        </div>
+        
+        <div class="tarjeta-resumen" id="filtro-entregados">
+            <div class="icono-resumen entregado">
+                <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:24px;height:24px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="info-resumen"><p>Entregados</p><h3 id="pedidos-entregados">0</h3></div>
+        </div>
+        
+        <div class="tarjeta-resumen" id="filtro-cancelados">
+            <div class="icono-resumen cancelado">
+                <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:24px;height:24px;"><polyline points="20 6 9 17 4 12" stroke-width="3"/></svg>
+            </div>
+            <div class="info-resumen"><p>Cancelados</p><h3 id="pedidos-cancelados">0</h3></div>
+        </div>
+        
+        <!-- Tarjeta de Ventas de Hoy -->
+        <div class="tarjeta-resumen" id="filtro-todos" style="border: 2px solid #10b981;">
+            <div class="icono-resumen" style="background:#10b981; color:white; border-radius:50%; width:48px; height:48px; display:flex; align-items:center; justify-content:center;">
+                <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:28px; height:28px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="info-resumen"><p>Ventas Hoy (Todos)</p><h3 id="ventas-dia" style="color:#10b981;">Q0.00</h3></div>
+        </div>
+    </div>
+
+    <div class="contenedor-doble">
+        <div class="panel">
+            <h2><span id="tabla-pedidos-titulo">Pedidos Pendientes</span><div class="live-dot"></div></h2>
+            <input type="text" class="buscador" placeholder="Buscar pedido..." id="buscador" />
+            <table class="tabla-pedidos">
+                <thead>
+                    <tr>
+                        <th># Pedido</th>
+                        <th>Cliente / NIT</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-pedidos">
+                    <tr><td colspan="5" class="cargando">Cargando pedidos...</td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 10px">Total: <span id="total-pedidos">0</span> pedidos</p>
+        </div>
+        <div class="panel" id="detalle-pedido">
+            <div class="cargando">Selecciona un pedido</div>
+        </div>
+    </div>
+</main>
+
+<script>
+    const API_URL = 'https://chela-backend.onrender.com/api';
+const socket = io('https://chela-backend.onrender.com', { transports: ['websocket', 'polling'] });
+
+    const sonidoNuevoPedido = new Audio('sonpedido.mp3');
+    let audioPermitido = false;
+
+    // Permitir audio al primer clic en cualquier parte de la pantalla
+    document.addEventListener("click", () => {
+        if (!audioPermitido) {
+            sonidoNuevoPedido.play().then(() => {
+                sonidoNuevoPedido.pause();
+                sonidoNuevoPedido.currentTime = 0;
+                audioPermitido = true;
+            }).catch(() => {});
+        }
+    }, { once: true });
+
+    function reproducirSonidoAlert() {
+        if(audioPermitido) {
+            sonidoNuevoPedido.currentTime = 0;
+            sonidoNuevoPedido.play().catch(err => console.warn("Audio bloqueado:", err));
+        }
+    }
+
+    // --- FUNCIÓN HORARIA CORREGIDA ---
+    function obtenerFechaLocal(fechaMySQL) {
+        if (!fechaMySQL) return new Date();
+        return new Date(fechaMySQL); // El navegador calcula automáticamente las horas de la zona horaria real
+    }
+
+    function calcularEnvioMonto(subtotal) {
+        if(subtotal >= 100) return 0;
+        if(subtotal >= 50) return 10;
+        return 15;
+    }
+
+    let pedidos = [], pedidoSeleccionado = null, pedidoSeleccionadoId = null;
+    let filtroActual = "pendiente"; 
+    let listaProductosBase = [];
+    let repartidoresVisibles = false;
+
+    async function cargarProductosBase() {
+        try {
+            const res = await fetch(`${API_URL}/productos`);
+            listaProductosBase = await res.json();
+        } catch (err) { console.warn("Error base:", err); }
+    }
+    cargarProductosBase();
+
+    async function cargarPedidos() {
+        try {
+            const res = await fetch(`${API_URL}/pedidos`);
+            pedidos = await res.json();
+            actualizarResumen();
+            aplicarFiltro();
+            document.getElementById("total-pedidos").textContent = pedidos.length;
+            const contPed = document.getElementById("contador-pedidos");
+            if(contPed) contPed.textContent = pedidos.length;
+        } catch (error) { console.error("Error cargando pedidos:", error); }
+    }
+    
+    // --- EVENTOS EN TIEMPO REAL ---
+    socket.on('connect', () => console.log('🟢 Conectado en tiempo real al servidor'));
+    socket.on('nuevoPedido', () => { 
+        reproducirSonidoAlert(); 
+        cargarPedidos(); 
+    });
+    socket.on('pedidoActualizado', () => { cargarPedidos(); });
+    socket.on('pedidoEliminado', () => { 
+        cargarPedidos(); 
+        document.getElementById("detalle-pedido").innerHTML = "<div class='cargando'>Selecciona un pedido</div>";
+    });
+
+    function normalizarEstado(e) { return (e||"pendiente").trim().toLowerCase().replace(/\s+/g,""); }
+
+    function aplicarFiltro() {
+        let listaFiltrada = pedidos;
+        if (filtroActual !== "todos") {
+            listaFiltrada = pedidos.filter(p => normalizarEstado(p.estado) === filtroActual);
+        }
+        renderizarPedidos(listaFiltrada);
+    }
+
+    const configFiltros = {
+        "filtro-pendientes": { estado: "pendiente", titulo: "Pedidos Pendientes" },
+        "filtro-preparacion": { estado: "preparacion", titulo: "Pedidos en Preparación" },
+        "filtro-encamino": { estado: "encamino", titulo: "Pedidos en Camino" },
+        "filtro-entregados": { estado: "entregado", titulo: "Pedidos Entregados" },
+        "filtro-cancelados": { estado: "cancelado", titulo: "Pedidos Cancelados" },
+        "filtro-todos": { estado: "todos", titulo: "Todos los pedidos (Ventas Hoy)" }
+    };
+
+    Object.keys(configFiltros).forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            el.onclick = () => {
+                filtroActual = configFiltros[id].estado;
+                document.getElementById("tabla-pedidos-titulo").textContent = configFiltros[id].titulo;
+                document.querySelectorAll(".tarjeta-resumen").forEach(t => t.classList.remove("activo"));
+                el.classList.add("activo");
+                aplicarFiltro();
+            };
+        }
+    });
+
+    function actualizarResumen() {
+        const hoy = new Date().toLocaleDateString("es-GT");
+        let n=0, p=0, c=0, e=0, ca=0, v=0;
+        
+        pedidos.forEach(x => {
+            const fecha = obtenerFechaLocal(x.fecha);
+            const esHoy = fecha.toLocaleDateString("es-GT") === hoy;
+            const subt = (x.productos||[]).reduce((s,pr)=>s+(Number(pr.precio)||0)*(Number(pr.cantidad)||1),0);
+            const tot = subt + calcularEnvioMonto(subt);
+            const est = normalizarEstado(x.estado);
+            
+            if(est==='pendiente'||est==='recibido') n++;
+            else if(est==='preparacion'||est==='enpreparacion') p++;
+            else if(est==='encamino') c++;
+            else if(est==='entregado') { e++; if(esHoy) v+=tot; }
+            else if(est==='cancelado') ca++;
+        });
+        
+        document.getElementById("pedidos-nuevos").textContent = n;
+        document.getElementById("pedidos-preparacion").textContent = p;
+        document.getElementById("pedidos-camino").textContent = c;
+        document.getElementById("pedidos-entregados").textContent = e;
+        document.getElementById("pedidos-cancelados").textContent = ca;
+        document.getElementById("ventas-dia").textContent = `Q${v.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function etiquetaClase(estado) {
+        const e = normalizarEstado(estado);
+        if(e==='pendiente'||e==='recibido') return {cls:'pendiente',txt:'Recibido'};
+        if(e==='preparacion'||e==='enpreparacion') return {cls:'preparacion',txt:'Preparación'};
+        if(e==='encamino') return {cls:'encamino',txt:'En Camino'};
+        if(e==='entregado') return {cls:'entregado',txt:'Entregado'};
+        if(e==='cancelado') return {cls:'cancelado',txt:'Cancelado'};
+        return {cls:'pendiente',txt:estado};
+    }
+
+    window.seleccionarPedidoPorId = function(idBusqueda) {
+        try {
+            const p = pedidos.find(x => String(x.id) === String(idBusqueda));
+            if(p) {
+                seleccionarPedido(p);
+            } else {
+                alert("No se encontró el pedido en la memoria.");
+            }
+        } catch (error) {
+            console.error("Error al buscar pedido:", error);
+        }
+    };
+
+    function renderizarPedidos(lista) {
+        const t = document.getElementById("lista-pedidos");
+        t.innerHTML = "";
+        if(!lista.length) { t.innerHTML = `<tr><td colspan="5" class="cargando">Sin pedidos</td></tr>`; return; }
+        
+        // --- ORDENAMIENTO DE VIEJOS A NUEVOS PARA PROCESAMIENTO ORDENADO (FIFO) ---
+        lista.sort((a, b) => {
+            const fechaA = new Date(a.fecha || 0).getTime();
+            const fechaB = new Date(b.fecha || 0).getTime();
+            return fechaA - fechaB;
+        });
+
+        lista.forEach(p => {
+            const nitText = p.nitcf && String(p.nitcf).trim() !== "" ? p.nitcf : "CF";
+            const subt = (p.productos||[]).reduce((s,pr)=>s+(Number(pr.precio)||0)*(Number(pr.cantidad)||1),0);
+            const total = subt + calcularEnvioMonto(subt);
+            const etq = etiquetaClase(p.estado);
+            const nombreMostrar = p.nombre || "Sin nombre";
+
+            const f = document.createElement("tr");
+            f.innerHTML = `
+                <td style="color:var(--primario);font-weight:600">#${p.numero}</td>
+                <td>${nombreMostrar}<br><small>${nitText}</small></td>
+                <td>Q${total.toLocaleString('es-GT', { minimumFractionDigits: 2 })}</td>
+                <td><span class="estado ${etq.cls}">${etq.txt}</span></td>
+                <td>
+                    <button class="btn-tabla btn-ver" onclick="window.seleccionarPedidoPorId('${p.id}')">Ver Orden</button>
+                    <button class="btn-tabla btn-eliminar" onclick="eliminarPedido('${p.id}',${p.numero})">Eliminar</button>
+                </td>
+            `;
+            t.appendChild(f);
+        });
+    }
+
+    // --- DETALLE DEL PEDIDO ---
+    window.seleccionarPedido = function(p) {
+        try {
+            pedidoSeleccionado = JSON.parse(JSON.stringify(p));
+            pedidoSeleccionadoId = p.id;
+            const d = document.getElementById("detalle-pedido");
+
+            const nitText = p.nitcf && String(p.nitcf).trim() !== "" ? p.nitcf : "CF";
+            
+            // LECTURA CORRECTA DE LA FECHA LOCAL
+            let fechaStr = "Fecha no disponible";
+            if(p.fecha) {
+                const fechaObj = obtenerFechaLocal(p.fecha);
+                fechaStr = fechaObj.toLocaleDateString("es-GT")+' — '+fechaObj.toLocaleTimeString("es-GT",{hour:'2-digit',minute:'2-digit'});
+            }
+
+            // LECTURA DEL MÉTODO DE PAGO
+            const metodoPagoText = p.metodo_pago || p.metodoPago || "Efectivo al recibir";
+
+            let subt = 0;
+            let prodHtml = "";
+            (p.productos||[]).forEach((item, idx) => {
+                const precio = Number(item.precio) || 0;
+                const cant = Number(item.cantidad) || 1;
+                const subProd = precio * cant;
+                subt += subProd;
+                
+                prodHtml += `
+                <div class="producto-item">
+                    <div>${item.nombre||"Producto sin nombre"}</div>
+                    <div>Precio: Q${precio.toFixed(2)}</div>
+                    <input type="number" class="cantidad-input" min="0.5" step="0.5" data-indice="${idx}" value="${cant}" onchange="actualizarCantidadProducto(${idx}, this.value)">
+                    <div>Subtotal: Q${subProd.toLocaleString('es-GT', { minimumFractionDigits: 2 })}</div>
+                    <button class="btn-eliminar-prod" onclick="eliminarProducto(${idx})">✕</button>
+                </div>`;
+            });
+
+            const envio = calcularEnvioMonto(subt);
+            const total = subt + envio;
+            const telLimpio = String(p.telefono||"").replace(/\D/g,"");
+
+            const repartidores = obtenerRepartidoresGuardados();
+            let listaRepartidoresHtml = "";
+            let opcionesSelectHtml = `<option value="">-- Seleccionar Repartidor --</option>`;
+            repartidores.forEach((rep, idx) => {
+                listaRepartidoresHtml += `<div style="display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; padding:4px 8px; margin-bottom:4px; border-radius:4px; font-size:12px;"><span><b>${rep.nombre}</b> (${rep.tel})</span><button class="btn" style="background:#d9534f; color:#fff; padding:2px 6px; font-size:11px; border:none; border-radius:4px;" onclick="eliminarRepartidorLocal(${idx})">Eliminar</button></div>`;
+                opcionesSelectHtml += `<option value="${rep.tel}">${rep.nombre} (${rep.tel})</option>`;
+            });
+
+            const agregarRepartidorBox = repartidores.length < 5 ? `<div style="display:flex; gap:6px; margin-top:6px;"><input type="text" id="nuevo-repartidor-nombre" class="buscador" placeholder="Nombre" style="padding:6px; font-size:12px; margin:0;" /><input type="text" id="nuevo-repartidor-tel" class="buscador" placeholder="Celular" style="padding:6px; font-size:12px; margin:0;" /><button class="btn gris" style="padding:6px 10px; font-size:12px;" onclick="guardarNuevoRepartidor()">+ Guardar</button></div>` : ``;
+            const seccionRepartidoresArriba = `<div class="seccion" style="background:#ffffff; border:1px solid #e0e0e0; padding:8px 12px; border-radius:6px; margin-bottom:12px;"><div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:13px; font-weight:600; color:#333;">Gestion de Repartidores</span><button class="btn gris" style="padding:4px 10px; font-size:11px; height:26px;" onclick="toggleSeccionRepartidores()"> Ver </button></div><div id="contenedor-repartidores-desplegable" style="display:${repartidoresVisibles ? 'block' : 'none'}; margin-top:8px; border-top:1px solid #eee; padding-top:8px;">${listaRepartidoresHtml}${agregarRepartidorBox}</div></div>`;
+            const gps = (p.latitud && p.longitud) ? `<div class="seccion"><p class="etiqueta">Ubicacion GPS</p><p>Lat:${p.latitud} • Lon:${p.longitud}</p><button class="btn gris" style="margin-top:6px;" onclick="window.open('https://www.google.com/maps?q=${p.latitud},${p.longitud}','_blank')">Google Maps</button><div style="display:flex; gap:6px; align-items:center; margin-top:6px;"><select id="select-repartidor-envio" class="buscador" style="margin:0; padding:6px 8px; font-size:12px; height:32px; flex:1;">${opcionesSelectHtml}</select><button class="btn gris" style="padding:6px 10px; font-size:12px; height:32px;" onclick="enviarUbicacionRepartidor()">WhatsApp</button></div></div>` : `<div class='seccion'><p class='etiqueta'>Ubicacion no compartida</p><div style="display:flex; gap:6px; align-items:center; margin-top:6px;"><select id="select-repartidor-envio" class="buscador" style="margin:0; padding:6px 8px; font-size:12px; height:32px; flex:1;">${opcionesSelectHtml}</select><button class="btn gris" style="padding:6px 10px; font-size:12px; height:32px;" onclick="enviarUbicacionRepartidor()">WhatsApp de todas formas</button></div></div>`;
+            const etq = etiquetaClase(p.estado);
+
+            d.innerHTML = `
+                ${seccionRepartidoresArriba}
+                <div class="acciones-superior">
+                    <button class="btn rosa" onclick="cambiarEstado('preparacion')">Preparacion</button>
+                    <button class="btn amarillo" onclick="cambiarEstado('encamino')">En Camino</button>
+                    <button class="btn verde" onclick="cambiarEstado('entregado')">Entregado</button>
+                    <button class="btn azul" onclick="descargarTicketPDF()">Descargar Ticket</button>
+                    <button class="btn whatsapp" onclick="window.open('https://wa.me/502${telLimpio}','_blank')">WhatsApp</button>
+                    <button class="btn rojo" onclick="cambiarEstado('cancelado')">Cancelar Pedido</button>
+                </div>
+                <h3>Pedido #${p.numero} <span class="estado ${etq.cls}">${etq.txt}</span></h3>
+                <p style="font-size:13px;color:var(--texto-claro)">${fechaStr}</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0">
+                    <div><p class="etiqueta">Cliente:</p><p>${p.nombre||"Sin nombre"}<br>${p.telefono||"Sin telefono"}<br>NIT: ${nitText}</p></div>
+                    <div><p class="etiqueta">Direccion:</p><p>${p.direccion||"Sin direccion"}</p></div>
+                </div>
+                ${gps}
+                <div class="seccion"><p class="etiqueta">Método de Pago:</p><span class="metodo-pago" style="font-weight:bold; color:var(--primario);">${metodoPagoText}</span></div>
+                <div class="seccion"><p class="etiqueta">Notas:</p><p>${p.notas||"Sin notas"}</p></div>
+                <div class="productos">
+                    <p class="etiqueta">Productos (${(p.productos||[]).length})</p>
+                    <div style="margin-bottom: 12px; position: relative;">
+                        <input type="text" id="buscador-productos-base" class="buscador" placeholder="Buscar producto para agregar..." oninput="filtrarProductosBase(this.value)" autocomplete="off" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;" />
+                        <div id="resultados-busqueda-productos" style="position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; border: 1px solid #ccc; max-height: 180px; overflow-y: auto; z-index: 999; box-shadow: 0px 6px 12px rgba(0,0,0,0.15);"></div>
+                    </div>
+                    ${prodHtml||"<p>Sin productos registrados</p>"}
+                </div>
+                <div style="margin-top:12px">
+                    <div style="display:flex;justify-content:space-between"><span class="etiqueta">Subtotal</span><span>Q${subt.toLocaleString('es-GT', { minimumFractionDigits: 2 })}</span></div>
+                    <div style="display:flex;justify-content:space-between"><span class="etiqueta">Envio</span><span>${envio===0?"Gratis":"Q"+envio.toFixed(2)}</span></div>
+                    <div style="display:flex;justify-content:space-between;font-weight:bold;padding-top:8px;border-top:1px solid #ddd;margin-top:8px">TOTAL Q${total.toLocaleString('es-GT', { minimumFractionDigits: 2 })}</div>
+                </div>
+                <button class="btn actualizar" onclick="guardarCambios()">Guardar cantidades y cambios</button>
+            `;
+        } catch (error) {
+            console.error("Error cargando detalle:", error);
+            alert("Hubo un error interno al mostrar este pedido.");
+        }
+    };
+
+    function obtenerRepartidoresGuardados() {
+        try { return JSON.parse(localStorage.getItem("chela_express_repartidores") || "[]"); } catch(e) { return []; }
+    }
+    
+    window.toggleSeccionRepartidores = function() {
+        repartidoresVisibles = !repartidoresVisibles;
+        const cont = document.getElementById("contenedor-repartidores-desplegable");
+        if (cont) cont.style.display = repartidoresVisibles ? "block" : "none";
+    };
+    
+    window.guardarNuevoRepartidor = function() {
+        const nombreInput = document.getElementById("nuevo-repartidor-nombre");
+        const telInput = document.getElementById("nuevo-repartidor-tel");
+        const nombre = nombreInput.value.trim();
+        let tel = telInput.value.replace(/\D/g, "");
+        if (!nombre || !tel) return alert("Ingresa datos válidos.");
+        if (tel.length === 8) tel = "502" + tel;
+        let repartidores = obtenerRepartidoresGuardados();
+        if (repartidores.length >= 5) return alert("Máximo de 5 repartidores alcanzado.");
+        repartidores.push({ nombre, tel });
+        localStorage.setItem("chela_express_repartidores", JSON.stringify(repartidores));
+        seleccionarPedido(pedidoSeleccionado);
+    };
+    
+    window.eliminarRepartidorLocal = function(index) {
+        let repartidores = obtenerRepartidoresGuardados();
+        repartidores.splice(index, 1);
+        localStorage.setItem("chela_express_repartidores", JSON.stringify(repartidores));
+        seleccionarPedido(pedidoSeleccionado);
+    };
+    
+    window.enviarUbicacionRepartidor = function() {
+        if (!pedidoSeleccionado) return alert("Selecciona un pedido primero.");
+        const selectRepartidor = document.getElementById("select-repartidor-envio");
+        if (!selectRepartidor || selectRepartidor.value === "") return alert("Selecciona un repartidor de la lista.");
+        
+        const metodoPagoText = pedidoSeleccionado.metodo_pago || pedidoSeleccionado.metodoPago || "Efectivo al recibir";
+        
+        let mensaje = `*PEDIDO #${pedidoSeleccionado.numero}*\nCliente: ${pedidoSeleccionado.nombre}\nTel: +502 ${pedidoSeleccionado.telefono}\nDir: ${pedidoSeleccionado.direccion}\n*MÉTODO DE PAGO: ${metodoPagoText.toUpperCase()}*`;
+        
+        if(pedidoSeleccionado.latitud && pedidoSeleccionado.longitud) {
+            mensaje += `\n\n*GPS:* https://www.google.com/maps?q=${pedidoSeleccionado.latitud},${pedidoSeleccionado.longitud}`;
+        } else {
+            mensaje += `\n\n_(Sin ubicación GPS compartida)_`;
+        }
+
+        window.open(`https://wa.me/${selectRepartidor.value}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    };
+
+    window.filtrarProductosBase = function(texto) {
+        const contenedor = document.getElementById("resultados-busqueda-productos");
+        if (!contenedor) return;
+        const queryText = texto.toLowerCase().trim();
+        if (!queryText) { contenedor.innerHTML = ""; return; }
+        const filtrados = listaProductosBase.filter(p => String(p.nombre || "").toLowerCase().includes(queryText));
+        if (filtrados.length === 0) { contenedor.innerHTML = `<div style="padding:10px;text-align:center;">No se encontraron productos</div>`; return; }
+        
+        let html = "";
+        filtrados.forEach(prod => {
+            const prodJson = JSON.stringify({ id: prod.id, nombre: prod.nombre, precio: prod.precio, costo: prod.costo, ganancia: prod.ganancia, cantidad: 1 }).replace(/'/g, "&#39;");
+            html += `<div style="padding: 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; justify-content: space-between; font-size: 13px;" onclick='agregarProductoAlPedido(${prodJson})'><span><b>${prod.nombre}</b> — Q${Number(prod.precio).toFixed(2)}</span><span style="color: green; font-weight: bold;">+ Agregar</span></div>`;
+        });
+        contenedor.innerHTML = html;
+    };
+
+    window.agregarProductoAlPedido = function(prodObj) {
+        if (!pedidoSeleccionado) return;
+        if (!pedidoSeleccionado.productos) pedidoSeleccionado.productos = [];
+        const indexExistente = pedidoSeleccionado.productos.findIndex(p => p.producto_id === prodObj.id || p.id === prodObj.id);
+        if (indexExistente >= 0) pedidoSeleccionado.productos[indexExistente].cantidad = (Number(pedidoSeleccionado.productos[indexExistente].cantidad) || 1) + 1;
+        else pedidoSeleccionado.productos.push(prodObj);
+        document.getElementById("resultados-busqueda-productos").innerHTML = "";
+        seleccionarPedido(pedidoSeleccionado);
+    };
+
+    window.actualizarCantidadProducto = function(indice, valor) {
+        if(!pedidoSeleccionado || !pedidoSeleccionado.productos) return;
+        let cant = parseFloat(valor);
+        if(isNaN(cant) || cant < 0.5) cant = 0.5;
+        pedidoSeleccionado.productos[indice].cantidad = cant;
+        seleccionarPedido(pedidoSeleccionado);
+    };
+
+    window.eliminarProducto = function(indice) {
+        if(!pedidoSeleccionado || !pedidoSeleccionado.productos) return;
+        pedidoSeleccionado.productos.splice(indice, 1);
+        seleccionarPedido(pedidoSeleccionado);
+    };
+
+    window.guardarCambios = async function() {
+        if(!pedidoSeleccionadoId) return alert("Selecciona un pedido primero");
+        try {
+            const subt = (pedidoSeleccionado.productos||[]).reduce((s,pr)=>s+(Number(pr.precio)||0)*(Number(pr.cantidad)||1),0);
+            const total = subt + calcularEnvioMonto(subt);
+            await fetch(`${API_URL}/pedidos/${pedidoSeleccionadoId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productos: pedidoSeleccionado.productos, subtotal: subt, total: total })
+            });
+            alert("Cambios guardados.");
+        } catch(err) { alert("Error al guardar: " + err.message); }
+    };
+
+    window.cambiarEstado = async function(nuevoEstado) {
+        if(!pedidoSeleccionadoId) return alert("Selecciona un pedido primero");
+        if(nuevoEstado === 'cancelado' && !confirm("¿Cancelar este pedido?")) return;
+        try {
+            await fetch(`${API_URL}/pedidos/${pedidoSeleccionadoId}/estado`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado: nuevoEstado, productos: pedidoSeleccionado.productos, numero: pedidoSeleccionado.numero })
+            });
+            
+            const toast = document.createElement("div");
+            toast.className = "toast-notificacion";
+            toast.textContent = "Estado actualizado";
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add("mostrar"), 10);
+            setTimeout(() => { toast.classList.remove("mostrar"); setTimeout(() => toast.remove(), 300); }, 2500);
+        } catch(err) { alert("Error: " + err.message); }
+    };
+
+    window.eliminarPedido = async function(idDoc, num) {
+        if(!confirm(`¿Eliminar el Pedido #${num}?`)) return;
+        try {
+            await fetch(`${API_URL}/pedidos/${idDoc}`, { method: 'DELETE' });
+        } catch(err) { alert("Error al eliminar: " + err.message); }
+    };
+
+    window.descargarTicketPDF = function() {
+        if(!pedidoSeleccionado) return alert("Selecciona un pedido primero");
+        try {
+            const { jsPDF } = window.jspdf;
+            const docPdf = new jsPDF({ orientation:"portrait", unit:"mm", format:[80, 300] });
+            const p = pedidoSeleccionado;
+            const idPedido = String(p.numero || "0");
+            const fechaObj = obtenerFechaLocal(p.fecha);
+            const fechaPedido = fechaObj.toLocaleDateString("es-GT") + ' ' + fechaObj.toLocaleTimeString("es-GT",{hour:'2-digit',minute:'2-digit'});
+            
+            const subtotal = (p.productos || []).reduce((s, pr) => s + (Number(pr.precio)||0) * (Number(pr.cantidad)||1), 0);
+            const envioMonto = calcularEnvioMonto(subtotal);
+            const total = subtotal + envioMonto;
+            const metodoPagoText = (p.metodo_pago || p.metodoPago || "Efectivo al recibir").toUpperCase();
+
+            docPdf.setFont("courier", "bold"); docPdf.setFontSize(14);
+            docPdf.text("CHELA EXPRESS", 40, 12, { align:"center" });
+            docPdf.setFontSize(8); docPdf.setFont("courier", "normal");
+            docPdf.text("SERVICIO DE ENTREGA", 40, 17, { align:"center" });
+            docPdf.text("------------------------------------------", 40, 21, { align:"center" });
+            docPdf.setFont("courier", "bold"); docPdf.setFontSize(11);
+            docPdf.text(`PEDIDO: #${idPedido}`, 40, 27, { align:"center" });
+            docPdf.setFont("courier", "normal"); docPdf.setFontSize(9);
+            docPdf.text(`Fecha: ${fechaPedido}`, 10, 33);
+            let y = 45;
+            docPdf.text(`Cliente: ${p.nombre || "Sin nombre"}`, 10, y); y += 5;
+            docPdf.text(`Tel: ${p.telefono || ""}`, 10, y); y += 5;
+            docPdf.text(`Dir: ${p.direccion || ""}`, 10, y); y += 5;
+            docPdf.text(`PAGO: ${metodoPagoText}`, 10, y); y += 5;
+            docPdf.text("------------------------------------------", 40, y, { align:"center" }); y += 6;
+            
+            (p.productos || []).forEach(prod => {
+                docPdf.text(String(prod.cantidad||1), 10, y);
+                const ln = docPdf.splitTextToSize(prod.nombre||"Prod", 38);
+                ln.forEach((l,i) => docPdf.text(l, 20, y + i*4));
+                docPdf.text(`Q${((Number(prod.precio)||0)*(Number(prod.cantidad)||1)).toFixed(2)}`, 70, y, { align:"right" });
+                y += Math.max(4, ln.length*4)+1;
+            });
+            y += 2;
+            docPdf.text("------------------------------------------", 40, y, { align:"center" }); y += 5;
+            docPdf.setFont("courier", "bold"); 
+            docPdf.text("TOTAL A PAGAR:", 15, y); docPdf.text(`Q${total.toFixed(2)}`, 68, y, { align:"right" }); y += 8;
+            docPdf.setFont("courier", "normal"); docPdf.setFontSize(8);
+            docPdf.text("¡Gracias por tu preferencia!", 40, y, { align:"center" });
+            docPdf.save(`Pedido_No.:${idPedido}.pdf`);
+        } catch(err) { alert("Error PDF: " + err.message); }
+    };
+
+    document.getElementById("buscador").addEventListener("input", (e) => {
+        const b = e.target.value.toLowerCase();
+        renderizarPedidos(pedidos.filter(x => String(x.numero||"").includes(b) || String(x.nombre||"").toLowerCase().includes(b) || String(x.telefono||"").includes(b)));
+    });
+
+    document.addEventListener("DOMContentLoaded", () => { cargarPedidos(); });
+</script>
+</body>
+</html>

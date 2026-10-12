@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horarios de servicio</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+    body {
+      background-color: #000;
+      color: #fff;
+      min-height: 100vh;
+      padding: 16px;
+      max-width: 950px;
+      margin: 0 auto;
+    }
+
+    /* Cabecera */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 32px;
+      padding: 12px 0;
+    }
+   
+    .header-title {
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    /* Tarjetas de horario */
+    .schedule-card {
+      background-color: #121212;
+      border-radius: 16px;
+      padding: 24px 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .icon-wrap {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+    }
+    .schedule-content {
+      flex: 1;
+    }
+    .schedule-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .schedule-label {
+      font-size: 15px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+    .schedule-time {
+      font-size: 24px;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+     .back-icon { 
+      width: 28px; 
+      height: 28px; 
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    /* Texto introductorio */
+    .intro-text {
+      font-size: 16px;
+      color: #999;
+      text-align: center;
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+
+    <header class="header">
+    <a href="/menu.html"><img src="/img/interfaz/icons/atras.webp" alt="Atrás" class="back-icon"></a>
+    <h1 class="header-title">Horarios de servicio</h1>
+  </header>
+
+
+  <!-- Tarjeta 1: Lunes a Viernes -->
+  <div class="schedule-card">
+    <div class="icon-wrap">
+      <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="6" y="8" width="32" height="28" rx="4" stroke="#ff0000" stroke-width="3" fill="none"/>
+        <line x1="6" y1="16" x2="38" y2="16" stroke="#ff0000" stroke-width="3"/>
+        <circle cx="30" cy="28" r="10" fill="#ff0000"/>
+        <path d="M30 22 V28 L34 32" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="12" y="22" width="4" height="4" fill="#ff0000"/>
+        <rect x="20" y="22" width="4" height="4" fill="#ff0000"/>
+        <rect x="12" y="28" width="4" height="4" fill="#ff0000"/>
+        <rect x="20" y="28" width="4" height="4" fill="#ff0000"/>
+      </svg>
+    </div>
+    <div class="schedule-content">
+      <h2 class="schedule-title">Lunes a Viernes</h2>
+      <p class="schedule-label">Horario de atención</p>
+      <p class="schedule-time">4:30 p.m. a 10:30 p.m.</p>
+    </div>
+  </div>
+
+  <!-- Tarjeta 2: Sábado y Domingo -->
+  <div class="schedule-card">
+    <div class="icon-wrap">
+      <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="6" y="8" width="32" height="28" rx="4" stroke="#ff0000" stroke-width="3" fill="none"/>
+        <line x1="6" y1="16" x2="38" y2="16" stroke="#ff0000" stroke-width="3"/>
+        <circle cx="30" cy="28" r="10" fill="#ff0000"/>
+        <path d="M30 22 V28 L34 32" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="12" y="22" width="4" height="4" fill="#ff0000"/>
+        <rect x="20" y="22" width="4" height="4" fill="#ff0000"/>
+        <rect x="12" y="28" width="4" height="4" fill="#ff0000"/>
+        <rect x="20" y="28" width="4" height="4" fill="#ff0000"/>
+      </svg>
+    </div>
+    <div class="schedule-content">
+      <h2 class="schedule-title">Sábado y Domingo</h2>
+      <p class="schedule-label">Horario de atención</p>
+      <p class="schedule-time">9:00 a.m. a 11:00 p.m.</p>
+    </div>
+  </div>
+
+  <p class="intro-text">Chela Express se reserva el derecho de no brindar servicio durante días feriados y fuera de los horarios estrictamente establecidos. Le recomendamos anticipar sus solicitudes si desea nuestra participación en sus eventos festivos para evitar inconvenientes.</p>
+
+</body>
+</html>

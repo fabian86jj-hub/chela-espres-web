@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zonas de servicio</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      background-color: #000;
+      color: #fff;
+      min-height: 100vh;
+      padding: 16px;
+      max-width: 950px;
+      margin: 0 auto;
+    }
+
+    /* Cabecera */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 16px;
+      padding: 12px 0;
+    }
+    .back-icon { 
+      width: 28px; 
+      height: 28px; 
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .header-title {
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    /* Tarjeta Servicio Activo */
+    .card {
+      background-color: #121212;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+    }
+    .icon-wrap {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+    }
+    .card-content {
+      flex: 1;
+    }
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .card-desc {
+      font-size: 15px;
+      color: #999;
+      line-height: 1.4;
+    }
+
+    /* === TARJETA SIN SERVICIO — EXACTO A LA IMAGEN === */
+    .card-sin-servicio {
+      background-color: #121212;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .sin-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .sin-icon {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+    }
+    .sin-titulo {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .sin-subtitulo {
+      font-size: 15px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .lista-contenedor {
+      background-color: #1a1a1a;
+      border-radius: 12px;
+      padding: 4px 0;
+    }
+    .zona-fila {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 24px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .zona-fila:last-child {
+      border-bottom: none;
+    }
+    .zona-pin {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .zona-nombre {
+      font-size: 17px;
+    }
+    /* === FIN SECCIÓN === */
+
+    /* Texto inferior — TAL CUAL */
+    .texto-inferior {
+      font-size: 16px;
+      color: #999;
+      line-height: 1.5;
+      padding: 0 8px;
+    }
+     /* Texto introductorio */
+    .intro-text {
+      font-size: 16px;
+      color: #999;
+      text-align: center;
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <a href="/menu.html"><img src="/img/interfaz/icons/atras.webp" alt="Atrás" class="back-icon"></a>
+    <h1 class="header-title">Zonas de servicio</h1>
+  </header>
+
+  <!-- Tarjeta Servicio Activo -->
+  <div class="card">
+    <div class="icon-wrap">
+      <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="22" cy="22" r="18" stroke="#22c55e" stroke-width="3" fill="none"/>
+        <circle cx="22" cy="22" r="14" fill="#22c55e"/>
+        <path d="M14 22 L20 28 L30 16" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="card-content">
+      <h2 class="card-title">Servicio activo</h2>
+      <p class="card-desc">Todos los barrios dentro del<br>municipio de Zacapa.</p>
+    </div>
+  </div>
+
+  <!-- TARJETA SIN SERVICIO — EXACTA A TU IMAGEN -->
+  <div class="card-sin-servicio">
+    <div class="sin-header">
+      <svg class="sin-icon" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="22" cy="22" r="18" stroke="#ff0000" stroke-width="3" fill="none"/>
+        <circle cx="22" cy="22" r="14" fill="#ff0000"/>
+        <path d="M14 14 L30 30 M30 14 L14 30" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h2 class="sin-titulo">SIN SERVICIO</h2>
+        <p class="sin-subtitulo">No brindamos servicio en:</p>
+      </div>
+    </div>
+
+    <div class="lista-contenedor">
+      <div class="zona-fila">
+        <svg class="zona-pin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C7.5 2 4 6 4 11C4 18 12 22 12 22C12 22 20 18 20 11C20 6 16.5 2 12 2Z" fill="#ff0000"/>
+          <circle cx="12" cy="11" r="3.5" fill="#fff"/>
+        </svg>
+        <span class="zona-nombre">Manzanotes</span>
+      </div>
+      <div class="zona-fila">
+        <svg class="zona-pin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C7.5 2 4 6 4 11C4 18 12 22 12 22C12 22 20 18 20 11C20 6 16.5 2 12 2Z" fill="#ff0000"/>
+          <circle cx="12" cy="11" r="3.5" fill="#fff"/>
+        </svg>
+        <span class="zona-nombre">El Terrero</span>
+      </div>
+      <div class="zona-fila">
+        <svg class="zona-pin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C7.5 2 4 6 4 11C4 18 12 22 12 22C12 22 20 18 20 11C20 6 16.5 2 12 2Z" fill="#ff0000"/>
+          <circle cx="12" cy="11" r="3.5" fill="#fff"/>
+        </svg>
+        <span class="zona-nombre">El Tocino</span>
+      </div>
+      <div class="zona-fila">
+        <svg class="zona-pin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C7.5 2 4 6 4 11C4 18 12 22 12 22C12 22 20 18 20 11C20 6 16.5 2 12 2Z" fill="#ff0000"/>
+          <circle cx="12" cy="11" r="3.5" fill="#fff"/>
+        </svg>
+        <span class="zona-nombre">El Badén</span>
+      </div>
+      <div class="zona-fila">
+        <svg class="zona-pin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C7.5 2 4 6 4 11C4 18 12 22 12 22C12 22 20 18 20 11C20 6 16.5 2 12 2Z" fill="#ff0000"/>
+          <circle cx="12" cy="11" r="3.5" fill="#fff"/>
+        </svg>
+        <span class="zona-nombre">La Trementina</span>
+      </div>
+      <div class="zona-fila">
+        <svg class="zona-pin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C7.5 2 4 6 4 11C4 18 12 22 12 22C12 22 20 18 20 11C20 6 16.5 2 12 2Z" fill="#ff0000"/>
+          <circle cx="12" cy="11" r="3.5" fill="#fff"/>
+        </svg>
+        <span class="zona-nombre">Pueblo Modelo</span>
+      </div>
+      <div class="zona-fila">
+        <svg class="zona-pin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C7.5 2 4 6 4 11C4 18 12 22 12 22C12 22 20 18 20 11C20 6 16.5 2 12 2Z" fill="#ff0000"/>
+          <circle cx="12" cy="11" r="3.5" fill="#fff"/>
+        </svg>
+        <span class="zona-nombre">Santa Lucía</span>
+      </div>
+    </div>
+  </div>
+
+   <p class="intro-text">Si te encuentras en una zona sin cobertura y necesitas asistencia, sigue estos pasos: <br> Paso 1: En menu Inicio Selecciona "Ayuda". <br> Paso 2: Escribe o llama a uno de nuestros operadores para evaluar tu caso de forma personalizada.</p>
+
+
+</body>
+</html>

@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Productos — Administración Chela Express</title>
+    <link rel="stylesheet" href="Stylepedidos.css">
+    <script src="https://chela-backend.onrender.com/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h1>CHELA express</h1>
+    </div>
+    <nav class="sidebar-menu">
+        <a href="/css/admin-tienda.html" class="menu-item" id="menu-tienda">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Estado Tienda
+        </a>
+
+        <a href="/css/admin-pedidos.html" class="menu-item" id="menu-pedidos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+            Pedidos <span class="badge" id="contador-pedidos">0</span>
+        </a>
+
+        <a href="/css/admin-ventas.html" class="menu-item" id="menu-ventas">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            Ventas
+        </a>
+
+        <a href="/css/admin-productos.html" class="menu-item activo" id="menu-productos">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
+            </svg>
+            Productos <span class="badge" id="contador-productos">0</span>
+        </a>
+
+        <a href="/css/admin-noticias.html" class="menu-item" id="menu-noticias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"></path>
+            </svg>
+            Noticias <span class="badge" id="contador-noticias">0</span>
+        </a>
+
+        <a href="/css/admin-categorias.html" class="menu-item" id="menu-categorias">
+            <svg class="icono-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+            </svg>
+            Categorías <span class="badge" id="contador-categorias">0</span>
+        </a>
+    </nav>
+</aside>
+
+<main class="main-content">
+    <h2 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;" id="titulo-form">
+        Administrar Productos
+    </h2>
+
+    <div class="panel" style="margin-bottom: 20px;">
+        <h3 style="margin-bottom: 14px; font-size: 16px;">Agregar Nuevo Producto</h3>
+        <form id="form-producto" style="display:grid; gap:10px;">
+            <input type="hidden" id="prod-id">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                    <label class="etiqueta">Tienda / Categoría Base</label>
+                    <select id="prod-tienda" class="buscador">
+                        <option value="">Cargando categorías...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="etiqueta">Subcategoría (Opcional)</label>
+                    <input type="text" id="prod-categoria" class="buscador" placeholder="ej: papas, nachos, mani">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:2fr 1fr; gap:10px;">
+                <div>
+                    <label class="etiqueta">Nombre del Producto</label>
+                    <input type="text" id="prod-nombre" class="buscador" placeholder="ej: Gallo Light Lata" required>
+                </div>
+                <div>
+                    <label class="etiqueta">Stock Disponible</label>
+                    <input type="number" id="prod-stock" class="buscador" placeholder="0" min="0" value="0">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                <div>
+                    <label class="etiqueta">Costo por Unidad (Q)</label>
+                    <input type="number" step="0.01" id="prod-costo" class="buscador" placeholder="6.00">
+                </div>
+                <div>
+                    <label class="etiqueta">Ganancia (Q)</label>
+                    <input type="number" step="0.01" id="prod-ganancia" class="buscador" placeholder="4.00" readonly style="background: #f1f1f1;">
+                </div>
+                <div>
+                    <label class="etiqueta">Precio de Venta (Q)</label>
+                    <input type="number" step="0.01" id="prod-precio" class="buscador" placeholder="10.00" required>
+                </div>
+            </div>
+
+            <label class="etiqueta">Descripción / Presentación</label>
+            <input type="text" id="prod-descripcion" class="buscador" placeholder="ej: 355 ml, 200g">
+
+            <label class="etiqueta">Ruta o Enlace de la Imagen</label>
+            <input type="text" id="prod-imagen" class="buscador" placeholder="Ruta: /img/productos/ o Link">
+            <img id="prod-vista-previa" class="vista-previa-img" alt="Vista previa" style="max-height:80px; object-fit:contain; display:none; margin-top:6px;">
+
+            <label style="display:flex; align-items:center; gap:8px; margin:6px 0;">
+                <input type="checkbox" id="prod-mostrar" checked>
+                <span>Producto visible en la tienda</span>
+            </label>
+
+            <div style="display:flex; gap:10px; margin-top:8px;">
+                <button type="submit" class="btn verde" id="btn-guardar">GUARDAR PRODUCTO</button>
+                <button type="button" class="btn azul" id="btn-cancelar" style="display:none;">CANCELAR EDICIÓN</button>
+            </div>
+        </form>
+    </div>
+
+    <input type="text" class="buscador" id="buscador-productos" placeholder="Buscar productos por nombre...">
+
+    <div class="panel">
+        <h3 style="margin-bottom:14px; font-size:16px;">Lista de Productos</h3>
+        <div id="contenedor-filtros-tienda" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+            <button type="button" class="btn verde btn-filtro-tienda" data-tienda="todos" style="padding: 6px 14px; font-size: 13px;">Todos</button>
+            <button type="button" class="btn azul btn-filtro-tienda" data-tienda="por-terminarse" style="padding: 6px 14px; font-size: 13px; opacity: 0.7;">Por Terminarse ⚠️</button>
+        </div>
+
+        <table class="tabla-pedidos">
+            <thead>
+                <tr>
+                    <th>Imagen</th>
+                    <th>Tienda</th>
+                    <th>Producto</th>
+                    <th>Costo</th>
+                    <th>Ganancia</th>
+                    <th>Precio Venta</th>
+                    <th>Stock</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="lista-productos">
+                <tr><td colspan="9" class="cargando">Cargando productos...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<script>
+    const API_URL = 'https://chela-backend.onrender.com/api';
+const socket = io('https://chela-backend.onrender.com', { transports: ['websocket', 'polling'] });
+
+    let productos = [];
+    let categoriasMenu = [];
+    let tiendaFiltro = "todos";
+
+    const form = document.getElementById("form-producto");
+    const lista = document.getElementById("lista-productos");
+    const buscador = document.getElementById("buscador-productos");
+    const btnCancelar = document.getElementById("btn-cancelar");
+    const tituloForm = document.getElementById("titulo-form");
+    const inputImagen = document.getElementById("prod-imagen");
+    const vistaPrevia = document.getElementById("prod-vista-previa");
+    const selectTienda = document.getElementById("prod-tienda");
+    const contenedorFiltros = document.getElementById("contenedor-filtros-tienda");
+
+    const inputCosto = document.getElementById("prod-costo");
+    const inputGanancia = document.getElementById("prod-ganancia");
+    const inputPrecio = document.getElementById("prod-precio");
+
+    // Cálculo independiente: Ganancia = Precio Venta - Costo
+    function calcularGananciaIndependiente() {
+        const costo = parseFloat(inputCosto.value) || 0;
+        const precio = parseFloat(inputPrecio.value) || 0;
+        const ganancia = precio - costo;
+        inputGanancia.value = ganancia >= 0 ? ganancia.toFixed(2) : "0.00";
+    }
+
+    inputCosto.addEventListener("input", calcularGananciaIndependiente);
+    inputPrecio.addEventListener("input", calcularGananciaIndependiente);
+
+    inputImagen.addEventListener("input", e => {
+        const val = e.target.value.trim();
+        if(val) {
+            vistaPrevia.src = val; 
+            vistaPrevia.style.display = "block";
+        } else vistaPrevia.style.display = "none";
+    });
+
+    // Cargar categorías desde la API correcta de MySQL (/admin/categorias)
+    async function cargarCategoriasMenu() {
+        try {
+            const res = await fetch(`${API_URL}/admin/categorias`);
+            categoriasMenu = await res.json();
+            
+            selectTienda.innerHTML = "";
+            
+            if (categoriasMenu && categoriasMenu.length > 0) {
+                categoriasMenu.forEach(cat => {
+                    const nombreInt = cat.nombre_interno || cat.nombreInterno || "";
+                    const nombreFormateado = (nombreInt.charAt(0).toUpperCase() + nombreInt.slice(1)).replace(/-/g, " ");
+                    const opt = document.createElement("option");
+                    opt.value = nombreInt;
+                    opt.textContent = nombreFormateado;
+                    selectTienda.appendChild(opt);
+                });
+
+                // Agregar botones de filtro dinámicamente según las categorías creadas
+                categoriasMenu.forEach(cat => {
+                    const nombreInt = cat.nombre_interno || cat.nombreInterno || "";
+                    const nombreFormateado = (nombreInt.charAt(0).toUpperCase() + nombreInt.slice(1)).replace(/-/g, " ");
+                    
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "btn azul btn-filtro-tienda";
+                    btn.dataset.tienda = nombreInt;
+                    btn.style.cssText = "padding: 6px 14px; font-size: 13px; opacity: 0.7;";
+                    btn.textContent = nombreFormateado;
+                    contenedorFiltros.appendChild(btn);
+                });
+
+                asignarEventosFiltros();
+            } else {
+                selectTienda.innerHTML = `<option value="">Crea categorías en el panel de categorías</option>`;
+            }
+        } catch (err) {
+            console.error("Error al cargar categorías:", err);
+            selectTienda.innerHTML = `<option value="">Error al cargar categorías</option>`;
+        }
+    }
+
+    function asignarEventosFiltros() {
+        contenedorFiltros.querySelectorAll(".btn-filtro-tienda").forEach(btn => {
+            btn.addEventListener("click", () => {
+                tiendaFiltro = btn.dataset.tienda;
+                buscador.value = "";
+                contenedorFiltros.querySelectorAll(".btn-filtro-tienda").forEach(b => {
+                    const activo = b.dataset.tienda === tiendaFiltro;
+                    b.className = `btn ${activo ? 'verde' : 'azul'} btn-filtro-tienda`;
+                    b.style.opacity = activo ? "1" : "0.7";
+                });
+                renderLista();
+            });
+        });
+    }
+
+    async function cargarProductos() {
+        try {
+            const res = await fetch(`${API_URL}/admin/productos`);
+            productos = await res.json();
+            
+            const elProd = document.getElementById("contador-productos");
+            if (elProd) elProd.textContent = productos.length;
+
+            renderLista();
+        } catch (err) {
+            console.error("Error al cargar productos:", err);
+            lista.innerHTML = `<tr><td colspan="9" class="cargando" style="color:#f66;">Error al conectar con el servidor</td></tr>`;
+        }
+    }
+
+    socket.on('productoActualizado', () => { cargarProductos(); });
+    socket.on('categoriaActualizada', () => { cargarCategoriasMenu(); });
+
+    function renderLista() {
+        lista.innerHTML = "";
+        
+        let filtrados = productos;
+        if (tiendaFiltro === "por-terminarse") {
+            filtrados = productos.filter(p => (Number(p.stock) || 0) < 20);
+        } else if (tiendaFiltro !== "todos" && tiendaFiltro !== "") {
+            filtrados = productos.filter(p => String(p.tienda || '').trim().toLowerCase() === String(tiendaFiltro).trim().toLowerCase());
+        }
+
+        const textoBusqueda = buscador.value.trim().toLowerCase();
+        if (textoBusqueda.length > 0) {
+            filtrados = filtrados.filter(p => (p.nombre || "").toLowerCase().includes(textoBusqueda) || (p.categoria || "").toLowerCase().includes(textoBusqueda));
+        }
+
+        if (filtrados.length === 0) {
+            lista.innerHTML = `<tr><td colspan="9" class="cargando">No se encontraron productos</td></tr>`;
+            return;
+        }
+
+        filtrados.forEach(p => {
+            const stockActual = p.stock !== undefined ? Number(p.stock) : 0;
+            const estiloStock = stockActual <= 0 
+                ? 'color: #ff4d4d; font-weight: bold;' 
+                : (stockActual < 20 ? 'color: #d97706; font-weight: bold;' : 'color: #2e7d32; font-weight: bold;');
+
+            const costo = Number(p.costo) || 0;
+            const precio = Number(p.precio) || 0;
+            const ganancia = Number(p.ganancia) !== undefined ? Number(p.ganancia) : (precio - costo);
+            const urlImg = p.ruta_imagen || p.imagen || '';
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>
+                  <img src="${urlImg}" 
+                       style="width:45px; height:55px; object-fit:contain; border-radius:4px; background:#111;" 
+                       alt="prod" 
+                       onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 45 55%22%3E%3Crect fill=%22%23222%22 width=%2245%22 height=%2255%22/%3E%3Ctext fill=%22%23666%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%228%22%3ESin Foto%3C/text%3E%3C/svg%3E';">
+                </td>
+                <td style="font-size:12px;">${p.tienda||"-"}</td>
+                <td><strong>${p.nombre||"Sin nombre"}</strong><br><small style="color:#888;">${p.categoria||""}</small></td>
+                <td style="color:#666;">Q${costo.toFixed(2)}</td>
+                <td style="color:#2b6cb0; font-weight:bold;">Q${ganancia.toFixed(2)}</td>
+                <td style="font-weight:bold;">Q${precio.toFixed(2)}</td>
+                <td style="${estiloStock}">${stockActual} ${stockActual <= 0 ? '(Agotado)' : 'ud.'}</td>
+                <td>
+                    <button class="btn-tabla ${p.mostrar ? 'btn-ver' : 'btn-eliminar'}" 
+                        onclick="toggleMostrar('${p.id}', ${!p.mostrar})"
+                        style="padding:2px 6px; font-size:11px; border-radius:4px; border:none; cursor:pointer;">
+                        ${p.mostrar ? '✅ Visible' : '❌ Oculto'}
+                    </button>
+                </td>
+                <td style="white-space:nowrap;">
+                    <button class="btn-tabla btn-ver" title="Editar" onclick="editarProducto('${p.id}')">Editar</button>
+                    <button class="btn-tabla btn-eliminar" title="Borrar" onclick="borrarProducto('${p.id}','${p.nombre||""}')">Borrar</button>
+                </td>
+            `;
+            lista.appendChild(tr);
+        });
+    }
+
+    window.toggleMostrar = async function(id, nuevoValor) {
+        const prod = productos.find(x => x.id === id);
+        if(!prod) return;
+        prod.mostrar = nuevoValor;
+        
+        try {
+            await fetch(`${API_URL}/admin/productos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(prod)
+            });
+            renderLista();
+        } catch(err) { alert("Error al actualizar visibilidad"); }
+    };
+
+    window.editarProducto = function(id) {
+        const p = productos.find(x => x.id === id);
+        if(!p) return;
+
+        const urlFoto = p.ruta_imagen || p.imagen || "";
+
+        document.getElementById("prod-id").value = id;
+        document.getElementById("prod-tienda").value = p.tienda || "";
+        document.getElementById("prod-categoria").value = p.categoria || "";
+        document.getElementById("prod-nombre").value = p.nombre || "";
+        document.getElementById("prod-descripcion").value = p.descripcion || "";
+        document.getElementById("prod-costo").value = p.costo || "";
+        document.getElementById("prod-precio").value = p.precio || "";
+        document.getElementById("prod-ganancia").value = p.ganancia !== undefined ? p.ganancia : ((p.precio || 0) - (p.costo || 0));
+        document.getElementById("prod-stock").value = p.stock !== undefined ? p.stock : 0;
+        document.getElementById("prod-imagen").value = urlFoto;
+        document.getElementById("prod-mostrar").checked = p.mostrar !== false;
+
+        if(urlFoto) {
+            vistaPrevia.src = urlFoto; 
+            vistaPrevia.style.display = "block";
+        } else vistaPrevia.style.display = "none";
+
+        tituloForm.textContent = "Editar Producto";
+        btnCancelar.style.display = "inline-flex";
+        window.scrollTo({top:0,behavior:'smooth'});
+    };
+
+    btnCancelar.addEventListener("click", () => {
+        form.reset();
+        tituloForm.textContent = "Administrar Productos";
+        btnCancelar.style.display = "none";
+        vistaPrevia.style.display = "none";
+        document.getElementById("prod-id").value = "";
+        document.getElementById("prod-stock").value = 0;
+    });
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const idExistente = document.getElementById("prod-id").value.trim();
+        const id = idExistente || `prod-${Date.now()}`;
+        const stockIngresado = parseInt(document.getElementById("prod-stock").value, 10) || 0;
+        const rutaFoto = document.getElementById("prod-imagen").value.trim();
+        const costo = parseFloat(document.getElementById("prod-costo").value) || 0;
+        const precio = parseFloat(document.getElementById("prod-precio").value) || 0;
+        const ganancia = precio - costo;
+        
+        const datos = {
+            id: id,
+            tienda: document.getElementById("prod-tienda").value,
+            categoria: document.getElementById("prod-categoria").value.trim().toLowerCase(),
+            nombre: document.getElementById("prod-nombre").value.trim(),
+            descripcion: document.getElementById("prod-descripcion").value.trim(),
+            costo: costo,
+            ganancia: ganancia,
+            precio: precio,
+            stock: stockIngresado,
+            ruta_imagen: rutaFoto,
+            mostrar: stockIngresado > 0 ? document.getElementById("prod-mostrar").checked : false
+        };
+
+        if(!datos.nombre) return alert("⚠️ Escribe el nombre del producto");
+
+        try {
+            const url = idExistente ? `${API_URL}/admin/productos/${idExistente}` : `${API_URL}/admin/productos`;
+            const metodo = idExistente ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+            const respData = await res.json();
+
+            if(respData.success) {
+                form.reset();
+                tituloForm.textContent = "Administrar Productos";
+                btnCancelar.style.display = "none";
+                vistaPrevia.style.display = "none";
+                document.getElementById("prod-id").value = "";
+                document.getElementById("prod-stock").value = 0;
+                alert("✅ Producto guardado correctamente.");
+                cargarProductos();
+            } else {
+                alert("❌ Error: " + respData.error);
+            }
+        } catch(err) {
+            alert("❌ Error de red: " + err.message);
+        }
+    });
+
+    window.borrarProducto = async function(id, nombre) {
+        if(!confirm(`⚠️ ¿Eliminar "${nombre}"?`)) return;
+        try { 
+            await fetch(`${API_URL}/admin/productos/${id}`, { method: 'DELETE' });
+            cargarProductos();
+        } catch(err) { 
+            alert("❌ Error al borrar: " + err.message); 
+        }
+    };
+
+    buscador.addEventListener("input", () => {
+        renderLista();
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        cargarCategoriasMenu();
+        cargarProductos();
+    });
+</script>
+</body>
+</html>

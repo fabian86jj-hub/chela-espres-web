@@ -1,0 +1,38 @@
+.estado-card-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+      }
+      .opcion-estado {
+        border: 2px solid #333;
+        border-radius: 8px;
+        padding: 14px;
+        text-align: center;
+        cursor: pointer;
+        background-color: rgb(255, 255, 255);
+        transition: all 0.2s ease;
+      }
+      .opcion-estado:hover {
+        border-color: #666;
+      }
+      .opcion-estado.activa-abierto {
+        border-color: #07f113;
+        background-color: #65d8062c;
+      }
+      .opcion-estado.activa-cerrado {
+        border-color: #ff0303;
+        background-color: #ff050546;
+      }
+      .opcion-estado.activa-mantenimiento {
+        border-color: #f57c00;
+        background-color: #f82d0941;
+      }
+      .opcion-estado h4 {
+        margin-bottom: 4px;
+        font-size: 15px;
+      }
+      .opcion-estado p {
+        font-size: 12px;
+        color: #aaa;
+      }
